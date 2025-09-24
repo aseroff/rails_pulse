@@ -15,6 +15,7 @@ class InstallRailsPulseTables < ActiveRecord::Migration[<%= ActiveRecord::Migrat
       RailsPulse::Schema.call(connection)
 
       say "Rails Pulse tables created successfully"
+      say "The schema file db/rails_pulse_schema.rb remains as your single source of truth"
     else
       raise "Rails Pulse schema file not found at db/rails_pulse_schema.rb"
     end

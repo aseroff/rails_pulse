@@ -40,11 +40,10 @@ module RailsPulse
 
           Next steps:
           1. Run: rails db:migrate
-          2. Delete: db/rails_pulse_schema.rb (no longer needed)
-          3. Remove db/rails_pulse_migrate/ directory if it exists
-          4. Restart your Rails server
+          2. Restart your Rails server
 
-          Future Rails Pulse updates will come as regular migrations.
+          The schema file db/rails_pulse_schema.rb remains as your single source of truth.
+          Future Rails Pulse updates will come as regular migrations in db/migrate/
 
         MESSAGE
       end

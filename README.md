@@ -90,10 +90,10 @@ Generate the installation files:
 rails generate rails_pulse:install
 ```
 
-Load the database schema:
+Run the database migration:
 
 ```bash
-rails db:prepare
+rails db:migrate
 ```
 
 Add the Rails Pulse route to your application:
@@ -358,15 +358,17 @@ production:
 
 ### Schema Loading
 
-After installation, load the Rails Pulse database schema:
+After installation, run the database migration:
 
 ```bash
-rails db:prepare
+rails db:migrate
 ```
 
 This command works for both:
-- Shared database setup (default): Loads tables into your main application database
-- Separate database setup: Automatically loads tables into your configured Rails Pulse database
+- Shared database setup (default): Creates tables in your main application database
+- Separate database setup: Automatically creates tables in your configured Rails Pulse database
+
+The schema file `db/rails_pulse_schema.rb` serves as your single source of truth for the database structure. Future Rails Pulse updates will provide additional migrations in the `db/rails_pulse_migrate/` directory.
 
 ## Testing
 
