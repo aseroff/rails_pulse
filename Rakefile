@@ -28,7 +28,7 @@ namespace :test do
 
   desc "Run all tests"
   task :all do
-    sh "rails test"
+    sh "rails test test/models test/controllers test/helpers test/services test/support test/instrumentation test/integration test/system"
   end
 
   desc "Run tests across all database and Rails version combinations (local only - CI uses sqlite3 + postgresql)"
