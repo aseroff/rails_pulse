@@ -57,7 +57,7 @@
 <% if query.issues.present? && query.issues.any? %>
   <hr class="mb-4" />
   <h3 class="text-lg bold">Issues Detected</h3>
-  <ul>
+  <ul style="list-style-type: disc; padding-left: 20px;">
     <% query.issues.each do |issue| %>
       <li><%= issue['description'] %></li>
     <% end %>
@@ -69,7 +69,7 @@
 <% if query.suggestions.present? && query.suggestions.any? %>
   <hr class="mb-4" />
   <h3 class="text-lg bold">Optimization Suggestions</h3>
-  <ul>
+  <ul style="list-style-type: disc; padding-left: 20px;">
     <% query.suggestions.each do |suggestion| %>
       <li>
         <%= suggestion['action'] %>.
@@ -82,6 +82,6 @@
 <!-- EXPLAIN Plan -->
 <% if query.explain_plan.present? %>
   <hr class="mb-4" />
-  <h3 class="text-lg bold mb-3">Execution Plan</h3>
+  <h3 class="text-lg bold">Execution Plan</h3>
   <pre class="text-sm" style="overflow: scroll"><%= query.explain_plan %></pre>
 <% end %>
