@@ -179,6 +179,7 @@ module RailsPulse
         codebase_location: "app/models/user.rb:10"
       }
 
+      # Make sure passed attributes override defaults (especially occurred_at)
       RailsPulse::Operation.create!(default_attributes.merge(attributes))
     end
   end
