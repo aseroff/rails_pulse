@@ -21,6 +21,24 @@ if defined?(RailsCharts)
         chart_html
       end
 
+      def bar_chart(data_source, options = {})
+        # Get the original chart HTML
+        chart_html = super(data_source, options)
+
+        # Try to get CSP nonce from various sources
+        nonce = get_csp_nonce
+
+        if nonce.present? && chart_html.present?
+          # Add nonce to all script tags in the chart HTML
+          chart_html = add_nonce_to_scripts(chart_html.to_s, nonce)
+          # Ensure the HTML is marked as safe for Rails to render
+          chart_html = chart_html.html_safe if chart_html.respond_to?(:html_safe)
+        end
+
+        chart_html
+      end
+
+
       private
 
       def get_csp_nonce
@@ -44,7 +62,17 @@ if defined?(RailsCharts)
                   request.env["csp_nonce"]
         end
 
-        # Method 4: Check thread/request store
+        # Method 4: Check controller if available
+        if nonce.blank? && respond_to?(:controller) && controller.respond_to?(:content_security_policy_nonce)
+          nonce = controller.content_security_policy_nonce
+        end
+
+        # Method 5: Check view context
+        if nonce.blank? && defined?(@view_context) && @view_context.respond_to?(:content_security_policy_nonce)
+          nonce = @view_context.content_security_policy_nonce
+        end
+
+        # Method 6: Check thread/request store
         if nonce.blank?
           nonce = Thread.current[:rails_pulse_csp_nonce] ||
                   (defined?(RequestStore) && RequestStore.store[:rails_pulse_csp_nonce])

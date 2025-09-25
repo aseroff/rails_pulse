@@ -57,7 +57,7 @@ module RailsPulse
             context: "routes",
             title: "Request Count Total",
             summary: "#{average_requests_per_minute.round(2)} / min",
-            line_chart_data: sparkline_data,
+            chart_data: sparkline_data,
             trend_icon: trend_icon,
             trend_amount: trend_amount,
             trend_text: "Compared to last week"
