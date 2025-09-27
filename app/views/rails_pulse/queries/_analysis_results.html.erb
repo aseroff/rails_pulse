@@ -12,7 +12,37 @@
         <dd><%= query.query_stats['table_count'] || 0 %></dd>
         <dt>Joins</dt>
         <dd><%= query.query_stats['join_count'] || 0 %></dd>
-        <dt>Complexity Score</dt>
+        <dt>
+          Complexity Score
+          <div data-controller="rails-pulse--popover" data-rails-pulse--popover-placement-value="bottom-start" style="display: inline-block; margin-left: 4px;">
+            <a href="#"
+              data-rails-pulse--popover-target="button"
+              data-action="rails-pulse--popover#toggle"
+              data-popovertarget="complexity-score-popover"
+              style="color: var(--gray-500); vertical-align: top;">
+              <%= rails_pulse_icon 'info', height: "14px" %>
+            </a>
+
+            <div popover class="popover card" data-rails-pulse--popover-target="menu" style="max-width: 22rem">
+              <div class="flex flex-col">
+                <h3 class="font-semibold leading-none mbe-2 uppercase text-sm">Complexity Score</h3>
+                <p class="text-sm text-subtle mbe-3">
+                  A calculated score representing query complexity based on multiple factors:
+                </p>
+                <ul class="text-sm text-subtle" style="list-style-type: disc; padding-left: 16px; margin: 0;">
+                  <li>Tables: +2 points per table</li>
+                  <li>Joins: +3 points per join</li>
+                  <li>WHERE conditions: +1 point per condition, +2 per function</li>
+                  <li>UNIONs: +4 points each</li>
+                  <li>Subqueries: +5 points each</li>
+                </ul>
+                <p class="text-sm text-subtle mbs-3">
+                  Higher scores indicate more complex queries that may need optimization.
+                </p>
+              </div>
+            </div>
+          </div>
+        </dt>
         <dd><%= query.query_stats['estimated_complexity'] || 0 %></dd>
         <dt>Has LIMIT</dt>
         <dd><%= query.query_stats['has_limit'] ? 'Yes' : 'No' %></dd>
