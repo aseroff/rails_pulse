@@ -30,7 +30,7 @@ module RailsPulse
     end
 
     def table_model
-      RailsPulse::Summary
+      RailsPulse::Request
     end
 
     def chart_class
@@ -56,22 +56,26 @@ module RailsPulse
 
     def build_table_ransack_params(ransack_params)
       params = ransack_params.merge(
-        period_start_gteq: Time.at(@table_start_time),
-        period_start_lt: Time.at(@table_end_time),
-        summarizable_type_eq: "RailsPulse::Request",
-        summarizable_id_eq: 0  # Overall request summaries
+        occurred_at_gteq: Time.at(@table_start_time),
+        occurred_at_lt: Time.at(@table_end_time)
       )
-      params[:avg_duration_gteq] = @start_duration if @start_duration && @start_duration > 0
+      params[:duration_gteq] = @start_duration if @start_duration && @start_duration > 0
       params
     end
 
     def default_table_sort
-      "period_start desc"
+      "occurred_at desc"
     end
 
     def build_table_results
-      # Temporarily bypass Tables::Index to debug the issue
-      @ransack_query.result.where(period_type: period_type)
+      base_query = @ransack_query.result.includes(:route)
+
+      # If sorting by route_path, we need to join the routes table
+      if @ransack_query.sorts.any? { |sort| sort.name == "route_path" }
+        base_query = base_query.joins(:route)
+      end
+
+      base_query
     end
 
 
