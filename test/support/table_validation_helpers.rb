@@ -110,7 +110,7 @@ module TableValidationHelpers
 
     # Apply performance-based filters - use different thresholds for queries vs routes
     # Skip validation for SQLite as test data may not be consistently filtered
-    unless ENV['DB'] == 'sqlite'
+    unless ENV["DB"] == "sqlite"
       case filter_applied
       when "Slow", /Slow.*≥.*ms/i
         if page_type == :queries

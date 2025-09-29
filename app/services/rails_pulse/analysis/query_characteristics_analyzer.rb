@@ -47,7 +47,7 @@ module RailsPulse
         tables.concat(sql.scan(/(?:INNER\s+|LEFT\s+|RIGHT\s+|FULL\s+|CROSS\s+)?JOIN\s+(?:`([^`]+)`|"([^"]+)"|'([^']+)'|(\w+(?:\.\w+)?))/i).flatten.compact)
 
         # Remove schema prefixes for uniqueness check (schema.table -> table)
-        normalized_tables = tables.map { |table| table.split('.').last }
+        normalized_tables = tables.map { |table| table.split(".").last }
         normalized_tables.uniq.length
       end
 

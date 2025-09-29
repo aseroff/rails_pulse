@@ -188,7 +188,7 @@ class QueriesShowPageTest < SharedIndexPageTest
 
     # Verify sort order by comparing first two rows (skip for SQLite if insufficient data)
     rows = all("tbody tr")
-    if rows.length < 2 && ENV['DB'] == 'sqlite'
+    if rows.length < 2 && ENV["DB"] == "sqlite"
       # SQLite test data might have insufficient rows for sorting comparison
       assert rows.length > 0, "Should have at least one row for #{column_name} sorting"
       return
@@ -228,7 +228,7 @@ class QueriesShowPageTest < SharedIndexPageTest
   # Override table validation for query show page since it has different column layout
   def validate_table_data(page_type:, expected_data: nil, filter_applied: nil)
     # For SQLite, add extra wait time to avoid stale element issues
-    if ENV['DB'] == 'sqlite'
+    if ENV["DB"] == "sqlite"
       sleep 2
       # Check if the turbo frame exists before proceeding
       unless has_selector?("turbo-frame#index_table", wait: 10)
@@ -280,7 +280,7 @@ class QueriesShowPageTest < SharedIndexPageTest
         # Validate duration (second column) - should contain "ms"
         duration_text = find("td:nth-child(2)").text
         # For SQLite, be more flexible with validation as data structure may differ
-        if ENV['DB'] == 'sqlite'
+        if ENV["DB"] == "sqlite"
           assert_match(/\d+(\.\d+)?/, duration_text, "Duration should show numeric value in row #{index + 1}, got: #{duration_text}")
         else
           assert_match(/\d+(\.\d+)?\s*ms/, duration_text, "Duration should show milliseconds in row #{index + 1}, got: #{duration_text}")
