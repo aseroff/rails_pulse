@@ -61,6 +61,10 @@
         </div>
       <% end %>
 
+      <div class="alert flex items-start mbs-8" role="alert">
+        <p>The chart above shows aggregated average response times grouped by time periods while the table below shows specific request details.</p>
+      </div>
+
       <%= turbo_frame_tag :index_table, data: { rails_pulse__index_target: "indexTable" } do %>
         <%= render 'rails_pulse/requests/table' %>
       <% end %>
