@@ -10,9 +10,12 @@ class RailsPulse::FormattingHelperTest < ActionView::TestCase
   end
 
   test "human_readable_occurred_at formats DateTime object" do
-    datetime = DateTime.new(2024, 1, 15, 14, 30, 0)
-    result = human_readable_occurred_at(datetime)
-    assert_equal "Jan 15, 2024  2:30 PM", result
+    # Create a specific time in UTC then convert to local for predictable testing
+    utc_time = Time.utc(2024, 1, 15, 14, 30, 0)
+    local_time = utc_time.getlocal
+    result = human_readable_occurred_at(local_time)
+    expected_result = local_time.strftime("%b %d, %Y %l:%M %p")
+    assert_equal expected_result, result
   end
 
   test "human_readable_occurred_at formats string" do

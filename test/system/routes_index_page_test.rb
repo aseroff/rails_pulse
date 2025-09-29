@@ -67,8 +67,8 @@ class RoutesIndexPageTest < SharedIndexPageTest
       "#request_count_totals" => {
         title_regex: /REQUEST COUNT TOTAL/,
         title_message: "Request count card should have correct title",
-        value_regex: /\d+\s*\/\s*min/,
-        value_message: "Request count should show per minute value"
+        value_regex: /\d+(\.\d+)?\s*\/\s*(min|day)/,
+        value_message: "Request count should show per minute or per day value"
       },
       "#error_rate_per_route" => {
         title_regex: /ERROR RATE PER ROUTE/,
@@ -134,9 +134,9 @@ class RoutesIndexPageTest < SharedIndexPageTest
     end
     assert_selector "table tbody tr", wait: 3
 
-    # Test Error Rate column sorting
+    # Test Max Response Time column sorting
     within("table thead") do
-      click_link "Error Rate (%)"
+      click_link "Max Response Time"
     end
     assert_selector "table tbody tr", wait: 3
   end

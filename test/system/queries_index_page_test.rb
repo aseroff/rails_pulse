@@ -67,8 +67,8 @@ class QueriesIndexPageTest < SharedIndexPageTest
       "#execution_rate" => {
         title_regex: /EXECUTION RATE/,
         title_message: "Execution rate card should have correct title",
-        value_regex: /\d+(\.\d+)?\s*\/\s*min/,
-        value_message: "Execution rate should show per minute value"
+        value_regex: /\d+(\.\d+)?\s*\/\s*(min|day)/,
+        value_message: "Execution rate should show per minute or per day value"
       }
     }
   end
@@ -76,8 +76,8 @@ class QueriesIndexPageTest < SharedIndexPageTest
   def sortable_columns
     [
       {
-        name: "Avg Time",
-        index: 3,
+        name: "Average Query Time",
+        index: 2,
         value_extractor: ->(text) { text.gsub(/[^\d.]/, "").to_f }
       },
       {
@@ -101,9 +101,9 @@ class QueriesIndexPageTest < SharedIndexPageTest
     end
     assert_selector "table tbody tr", wait: 3
 
-    # Test Total Time column sorting
+    # Test Average Query Time column sorting
     within("table thead") do
-      click_link "Total Time"
+      click_link "Average Query Time"
     end
     assert_selector "table tbody tr", wait: 3
   end

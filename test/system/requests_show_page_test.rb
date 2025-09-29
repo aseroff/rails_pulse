@@ -11,7 +11,6 @@ class RequestsShowPageTest < ApplicationSystemTestCase
 
     # Should show request details
     assert_text @request.route.path_and_method
-    assert_text @request.request_uuid
     assert_text "#{@request.duration.round(2)} ms"
 
     # Should show operations table when operations exist

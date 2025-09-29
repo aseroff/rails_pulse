@@ -105,14 +105,16 @@ module RailsPulse
 
       # Use a very specific recent time window that won't conflict with other tests
       base_time = 30.hours.ago  # Within 48 hour window but different from other tests
-      12.times do |i|
+
+      # Create exactly 11 operations (need > 10 for N+1 detection) in the same minute
+      11.times do |i|
         create_operation(query, occurred_at: base_time + i.seconds)
       end
 
       results = QueryAnalysisService.analyze_query(query.id)
       n_plus_one_result = results[:backtrace_analysis][:potential_n_plus_one]
 
-      assert n_plus_one_result[:detected], "Expected N+1 pattern to be detected with 12 operations in same minute"
+      assert n_plus_one_result[:detected], "Expected N+1 pattern to be detected with 11 operations in same minute"
       assert n_plus_one_result[:suspicious_periods].any?, "Expected suspicious periods to be identified"
     end
 

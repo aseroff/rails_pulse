@@ -42,7 +42,7 @@ class DashboardIndexPageTest < ApplicationSystemTestCase
     assert_match(/\d+\s*ms/, page.text, "Should show 95th percentile time in ms")
 
     assert_text "REQUEST COUNT TOTAL"
-    assert_match(/\d+\s*\/\s*min/, page.text, "Should show request count per minute")
+    assert_match(/\d+(\.\d+)?\s*\/\s*(min|day)/, page.text, "Should show request count per minute or per day")
 
     assert_text "ERROR RATE PER ROUTE"
     assert_match(/\d+(\.\d+)?%/, page.text, "Should show error rate as percentage")

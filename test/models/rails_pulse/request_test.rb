@@ -55,7 +55,8 @@ class RailsPulse::RequestTest < ActiveSupport::TestCase
     time = Time.parse("2024-01-15 14:30:00 UTC")
     request = create(:request, occurred_at: time)
 
-    expected_format = time.strftime("%b %d, %Y %l:%M %p")
+    # The to_s method calls getlocal, so we need to expect the local time format
+    expected_format = time.getlocal.strftime("%b %d, %Y %l:%M %p")
     assert_equal expected_format, request.to_s
   end
 
