@@ -18,7 +18,6 @@ class RailsPulse::StatusHelperTest < ActionView::TestCase
       status: 200,
       is_error: false,
       request_uuid: SecureRandom.uuid,
-      controller_action: "TestController#test",
       occurred_at: Time.current
     )
     super

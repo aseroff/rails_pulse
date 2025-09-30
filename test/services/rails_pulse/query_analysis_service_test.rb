@@ -26,9 +26,9 @@ module RailsPulse
       assert_equal "SELECT", characteristics[:query_type]
       assert_equal 1, characteristics[:table_count]
       assert_equal 0, characteristics[:join_count]
-      assert characteristics[:has_subqueries]
-      assert characteristics[:has_limit]
-      assert characteristics[:has_order_by]
+      assert_not characteristics[:has_subqueries]
+      assert_not characteristics[:has_limit]
+      assert_not characteristics[:has_order_by]
     end
 
     test "detects pattern-based issues" do

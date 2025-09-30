@@ -34,6 +34,9 @@ ls -la public/rails-pulse-assets/
 # Run all tests (this will also validate the CI setup)
 rake test
 
+# Run generator tests separately (these are excluded from main test suite)
+rails test test/generators
+
 # Check that the gem builds successfully
 gem build rails_pulse.gemspec
 ```

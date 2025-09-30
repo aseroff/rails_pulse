@@ -18,3 +18,7 @@ Minitest/NonPublicTestMethod:
 
 Minitest/MultipleAssertions:
   Enabled: false
+
+# Disable enforcement of underscore test method names to allow string test names
+Minitest/TestMethodName:
+  Enabled: false
