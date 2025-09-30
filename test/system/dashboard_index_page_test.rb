@@ -102,10 +102,12 @@ class DashboardIndexPageTest < ApplicationSystemTestCase
 
         # Check that average time values are reasonable (in ms)
         first_row_avg_time = find("tr:first-child td:nth-child(2)").text
+
         assert_match(/\d+\s*ms/, first_row_avg_time, "Average time should show milliseconds")
 
         # Check that request count is shown
         first_row_requests = find("tr:first-child td:nth-child(3)").text
+
         assert_match(/\d+/, first_row_requests, "Request count should be numeric")
       end
     end
@@ -133,10 +135,12 @@ class DashboardIndexPageTest < ApplicationSystemTestCase
 
         # Check that average time values are reasonable (in ms)
         first_row_avg_time = find("tr:first-child td:nth-child(2)").text
+
         assert_match(/\d+\s*ms/, first_row_avg_time, "Average time should show milliseconds")
 
         # Check that execution count is shown
         first_row_executions = find("tr:first-child td:nth-child(3)").text
+
         assert_match(/\d+/, first_row_executions, "Execution count should be numeric")
       end
     end

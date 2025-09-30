@@ -109,6 +109,7 @@ class SharedIndexPageTest < ApplicationSystemTestCase
     metric_card_selectors.each do |selector, expected_pattern|
       within(selector) do
         card_text = text.upcase
+
         assert_match expected_pattern[:title_regex], card_text, expected_pattern[:title_message]
         assert_match expected_pattern[:value_regex], text, expected_pattern[:value_message]
       end
@@ -259,7 +260,8 @@ class SharedIndexPageTest < ApplicationSystemTestCase
     # Verify sort order is maintained (if we have overlapping data)
     if current_sorted_rows.length == sorted_rows.length && (current_sorted_rows & sorted_rows).length > 0
       common_items = current_sorted_rows & sorted_rows
-      assert common_items.length > 0, "Should have some common items to verify sort persistence"
+
+      assert_operator common_items.length, :>, 0, "Should have some common items to verify sort persistence"
     end
 
     # Verify chart has data
@@ -272,12 +274,14 @@ class SharedIndexPageTest < ApplicationSystemTestCase
       }
       return 0;
     ")
-    assert chart_columns > 1, "Should have multiple chart columns"
+
+    assert_operator chart_columns, :>, 1, "Should have multiple chart columns"
 
     # Verify URL parameters
     current_url = page.current_url
-    assert current_url.include?("selected_column_time"), "URL should contain selected_column_time parameter after column selection"
-    assert current_url.include?("q%5Bs%5D"), "Sort parameter should be preserved during column selection"
+
+    assert_includes current_url, "selected_column_time", "URL should contain selected_column_time parameter after column selection"
+    assert_includes current_url, "q%5Bs%5D", "Sort parameter should be preserved during column selection"
   end
 
   private
@@ -288,6 +292,7 @@ class SharedIndexPageTest < ApplicationSystemTestCase
     value_extractor = column_config[:value_extractor] || ->(text) { text.gsub(/[^\d.]/, "").to_f }
 
     within("table thead") { first(:link, column_name).click }
+
     assert_selector "table tbody tr", wait: 3
 
     # Verify sort order by comparing first two rows
@@ -306,6 +311,7 @@ class SharedIndexPageTest < ApplicationSystemTestCase
 
     # Test sorting by clicking the same column again (should toggle sort direction)
     within("table thead") { first(:link, column_name).click }
+
     assert_selector "table tbody tr", wait: 3
 
     # Get new values after re-sorting
@@ -323,6 +329,7 @@ class SharedIndexPageTest < ApplicationSystemTestCase
   def simulate_column_selection
     # Find the index controller and simulate column click
     index_element = find('[data-controller="rails-pulse--index"]')
+
     assert index_element, "Should find element with rails-pulse--index controller"
 
     # Use JavaScript to simulate column selection

@@ -30,21 +30,25 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
 
   test "should be valid with required attributes" do
     operation = create(:operation)
-    assert operation.valid?
+
+    assert_predicate operation, :valid?
   end
 
   test "should have correct operation types constant" do
     expected_types = %w[sql controller template partial layout collection cache_read cache_write http job mailer storage]
+
     assert_equal expected_types, RailsPulse::Operation::OPERATION_TYPES
   end
 
   test "should include ransackable attributes" do
     expected_attributes = %w[id occurred_at label duration start_time average_query_time_ms query_count operation_type query_id]
+
     assert_equal expected_attributes.sort, RailsPulse::Operation.ransackable_attributes.sort
   end
 
   test "should include ransackable associations" do
     expected_associations = []
+
     assert_equal expected_associations.sort, RailsPulse::Operation.ransackable_associations.sort
   end
 
@@ -54,6 +58,7 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
     controller_operation = create(:operation, request: request, operation_type: "controller")
 
     sql_operations = RailsPulse::Operation.by_type("sql")
+
     assert_includes sql_operations, sql_operation
     assert_not_includes sql_operations, controller_operation
   end
@@ -84,6 +89,7 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
 
   test "should return id as string representation" do
     operation = create(:operation)
+
     assert_equal operation.id, operation.to_s
   end
 end

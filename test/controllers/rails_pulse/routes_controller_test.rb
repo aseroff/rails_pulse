@@ -13,11 +13,12 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "controller includes ChartTableConcern" do
-    assert RailsPulse::RoutesController.included_modules.include?(ChartTableConcern)
+    assert_includes RailsPulse::RoutesController.included_modules, ChartTableConcern
   end
 
   test "controller has index and show actions" do
     controller = RailsPulse::RoutesController.new
+
     assert_respond_to controller, :index
     assert_respond_to controller, :show
   end
@@ -37,17 +38,20 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
 
     # For index action - uses Summary model
     controller.stubs(:action_name).returns("index")
+
     assert_equal RailsPulse::Summary, controller.send(:chart_model)
     assert_equal RailsPulse::Summary, controller.send(:table_model)
 
     # For show action - chart always uses Summary, table uses Request
     controller.stubs(:action_name).returns("show")
+
     assert_equal RailsPulse::Summary, controller.send(:chart_model)
     assert_equal RailsPulse::Request, controller.send(:table_model)
   end
 
   test "uses correct chart class" do
     controller = RailsPulse::RoutesController.new
+
     assert_equal RailsPulse::Routes::Charts::AverageResponseTimes, controller.send(:chart_class)
   end
 
@@ -56,10 +60,12 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
 
     # For index action
     controller.stubs(:action_name).returns("index")
+
     assert_equal "avg_duration desc", controller.send(:default_table_sort)
 
     # For show action
     controller.stubs(:action_name).returns("show")
+
     assert_equal "occurred_at desc", controller.send(:default_table_sort)
   end
 
@@ -94,7 +100,7 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
 
 
   test "controller inherits from ApplicationController" do
-    assert RailsPulse::RoutesController < RailsPulse::ApplicationController
+    assert_operator RailsPulse::RoutesController, :<, RailsPulse::ApplicationController
   end
 
   private

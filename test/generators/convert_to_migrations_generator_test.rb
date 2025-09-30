@@ -54,6 +54,7 @@ class ConvertToMigrationsGeneratorTest < Rails::Generators::TestCase
 
     assert_migration "db/migrate/install_rails_pulse_tables.rb" do |content|
       expected_version = ActiveRecord::Migration.current_version
+
       assert_match(/ActiveRecord::Migration\[#{expected_version}\]/, content)
     end
   end
@@ -111,6 +112,7 @@ class ConvertToMigrationsGeneratorTest < Rails::Generators::TestCase
 
   def assert_migration(relative_path, &block)
     file_name = migration_file_name(relative_path)
+
     assert file_name, "Expected migration #{relative_path} to exist"
     assert_file file_name, &block
   end

@@ -132,12 +132,14 @@ class RoutesIndexPageTest < SharedIndexPageTest
     within("table thead") do
       click_link "Requests"
     end
+
     assert_selector "table tbody tr", wait: 3
 
     # Test Max Response Time column sorting
     within("table thead") do
       click_link "Max Response Time"
     end
+
     assert_selector "table tbody tr", wait: 3
   end
 

@@ -77,17 +77,18 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
     # The generator should either complete successfully or exit with schema not found error
     # Since we simplified the output capture, just check if it ran
-    assert convert_output.is_a?(String), "Convert generator should return output"
+    assert_kind_of String, convert_output, "Convert generator should return output"
 
     # Apply any pending migrations
     migration_output = run_database_migration
+
     assert_includes migration_output, "completed successfully", "Migration should complete successfully"
 
     # Verify tables were created from schema
     assert_all_rails_pulse_tables_created
 
     # Verify schema file persists (not deleted as in old docs)
-    assert File.exist?(Rails.root.join("db/rails_pulse_schema.rb"))
+    assert_path_exists Rails.root.join("db/rails_pulse_schema.rb")
   end
 
   test "separate database workflow" do
@@ -109,7 +110,8 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
     # Load the generated initializer
     initializer_path = Rails.root.join("config/initializers/rails_pulse.rb")
-    assert File.exist?(initializer_path)
+
+    assert_path_exists initializer_path
 
     initializer_content = File.read(initializer_path)
 
@@ -188,9 +190,11 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
   def assert_schema_file_created
     schema_file = Rails.root.join("db/rails_pulse_schema.rb")
-    assert File.exist?(schema_file), "Schema file should be created"
+
+    assert_path_exists schema_file, "Schema file should be created"
 
     schema_content = File.read(schema_file)
+
     assert_includes schema_content, "RailsPulse::Schema = lambda"
     assert_includes schema_content, "Rails Pulse Database Schema"
 
@@ -202,30 +206,36 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
   def assert_initializer_file_created
     initializer_file = Rails.root.join("config/initializers/rails_pulse.rb")
-    assert File.exist?(initializer_file), "Initializer file should be created"
+
+    assert_path_exists initializer_file, "Initializer file should be created"
 
     content = File.read(initializer_file)
+
     assert_includes content, "RailsPulse.configure"
   end
 
   def assert_migration_created_for_single_database
     migration_files = Dir.glob(Rails.root.join("db/migrate/*_install_rails_pulse_tables.rb"))
-    assert migration_files.any?, "Install migration should be created for single database setup"
+
+    assert_predicate migration_files, :any?, "Install migration should be created for single database setup"
 
     migration_content = File.read(migration_files.first)
+
     assert_includes migration_content, "load schema_file"
     assert_includes migration_content, "RailsPulse::Schema.call(connection)"
   end
 
   def assert_migration_directory_created
     migrate_dir = Rails.root.join("db/rails_pulse_migrate")
+
     assert Dir.exist?(migrate_dir), "Migration directory should be created for separate database setup"
-    assert File.exist?(File.join(migrate_dir, ".keep")), ".keep file should exist in migration directory"
+    assert_path_exists File.join(migrate_dir, ".keep"), ".keep file should exist in migration directory"
   end
 
   def assert_no_migration_for_separate_database
     migration_files = Dir.glob(Rails.root.join("db/migrate/*_install_rails_pulse_tables.rb"))
-    assert migration_files.empty?, "No install migration should be created for separate database setup"
+
+    assert_empty migration_files, "No install migration should be created for separate database setup"
   end
 
   def assert_all_rails_pulse_tables_created
@@ -239,6 +249,7 @@ class InstallationTest < ActionDispatch::IntegrationTest
     # Verify key columns exist (especially the newer ones)
     if connection.table_exists?(:rails_pulse_queries)
       query_columns = connection.columns(:rails_pulse_queries).map(&:name)
+
       assert_includes query_columns, "analyzed_at"
       assert_includes query_columns, "explain_plan"
       assert_includes query_columns, "index_recommendations"
@@ -259,11 +270,13 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
   def assert_schema_file_persists_correctly
     schema_file = Rails.root.join("db/rails_pulse_schema.rb")
-    assert File.exist?(schema_file), "Schema file should persist as single source of truth"
+
+    assert_path_exists schema_file, "Schema file should persist as single source of truth"
 
     # File should not be empty or corrupted
     content = File.read(schema_file)
-    assert content.length > 100, "Schema file should contain substantial content"
+
+    assert_operator content.length, :>, 100, "Schema file should contain substantial content"
     assert_includes content, "RailsPulse::Schema"
   end
 
@@ -327,13 +340,15 @@ class InstallationTest < ActionDispatch::IntegrationTest
 
   def assert_upgrade_migration_created
     migration_files = Dir.glob(Rails.root.join("db/migrate/*_upgrade_rails_pulse_tables.rb"))
-    assert migration_files.any?, "Upgrade migration should be created"
+
+    assert_predicate migration_files, :any?, "Upgrade migration should be created"
   end
 
   def assert_upgrade_features_applied
     # Verify that upgrade added the missing columns
     if ActiveRecord::Base.connection.table_exists?(:rails_pulse_queries)
       columns = ActiveRecord::Base.connection.columns(:rails_pulse_queries).map(&:name)
+
       assert_includes columns, "analyzed_at"
       assert_includes columns, "explain_plan"
     end

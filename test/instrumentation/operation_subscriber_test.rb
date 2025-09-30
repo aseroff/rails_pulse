@@ -47,12 +47,14 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "sql", operation[:operation_type]
     assert_equal "SELECT * FROM users WHERE id = ?", operation[:label]
-    assert operation[:duration] >= 0, "Duration should be non-negative, got: #{operation[:duration]}"
+    assert_operator operation[:duration], :>=, 0, "Duration should be non-negative, got: #{operation[:duration]}"
     assert_equal @request.id, operation[:request_id]
   end
 
@@ -70,6 +72,7 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 0, operations.size, "Schema queries should be filtered out"
   end
 
@@ -84,6 +87,7 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 0, operations.size, "RailsPulse queries should be filtered out"
   end
 
@@ -97,12 +101,14 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "template", operation[:operation_type]
     assert_equal "/app/views/users/show.html.erb", operation[:label]
-    assert operation[:duration] >= 0
+    assert_operator operation[:duration], :>=, 0
   end
 
   test "should capture controller action operations" do
@@ -116,12 +122,14 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "controller", operation[:operation_type]
     assert_equal "UsersController#show", operation[:label]
-    assert operation[:duration] >= 0
+    assert_operator operation[:duration], :>=, 0
   end
 
   test "should capture partial rendering operations" do
@@ -134,9 +142,11 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "partial", operation[:operation_type]
     assert_equal "/app/views/users/_user.html.erb", operation[:label]
   end
@@ -151,9 +161,11 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "cache_read", operation[:operation_type]
     assert_equal "user/123/profile", operation[:label]
   end
@@ -170,16 +182,18 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "sql", operation[:operation_type]
     assert_equal "SELECT * FROM users WHERE id = ?", operation[:label]
-    assert operation[:duration] >= 0
+    assert_operator operation[:duration], :>=, 0
     assert_equal @request.id, operation[:request_id]
-    assert operation[:start_time].is_a?(Float)
-    assert operation[:occurred_at] >= start_time
-    assert operation[:occurred_at].is_a?(Time)
+    assert_kind_of Float, operation[:start_time]
+    assert_operator operation[:occurred_at], :>=, start_time
+    assert_kind_of Time, operation[:occurred_at]
   end
 
   test "should not capture operations without request context" do
@@ -195,6 +209,7 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 0, operations.size
   end
 
@@ -210,6 +225,7 @@ class OperationSubscriberTest < ActiveSupport::TestCase
 
     operations = RequestStore.store[:rails_pulse_operations]
     operation = operations.first
+
     assert_equal "SELECT * FROM users", operation[:label]
   end
 
@@ -224,9 +240,11 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "http", operation[:operation_type]
     assert_equal "GET https://api.example.com/users", operation[:label]
   end
@@ -247,9 +265,11 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     end
 
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
 
     operation = operations.first
+
     assert_equal "job", operation[:operation_type]
     assert_equal "TestJob", operation[:label]
   end
@@ -266,8 +286,10 @@ class OperationSubscriberTest < ActiveSupport::TestCase
 
     # Should have captured the operation even with nil SQL
     operations = RequestStore.store[:rails_pulse_operations]
+
     assert_equal 1, operations.size
     operation = operations.first
+
     assert_nil operation[:label] # nil SQL should result in nil label
   end
 
@@ -285,8 +307,8 @@ class OperationSubscriberTest < ActiveSupport::TestCase
     operations = RequestStore.store[:rails_pulse_operations]
     operation = operations.first
 
-    assert operation[:start_time].is_a?(Float)
-    assert operation[:occurred_at].is_a?(Time)
-    assert operation[:occurred_at] >= start_time
+    assert_kind_of Float, operation[:start_time]
+    assert_kind_of Time, operation[:occurred_at]
+    assert_operator operation[:occurred_at], :>=, start_time
   end
 end

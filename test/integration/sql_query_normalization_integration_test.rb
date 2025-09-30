@@ -19,6 +19,7 @@ class SqlQueryNormalizationIntegrationTest < ActiveSupport::TestCase
 
     # The query's normalized_sql should use the improved normalization
     expected_normalized = "SELECT users.* FROM users WHERE users.id = ? AND users.email = ?"
+
     assert_equal expected_normalized, operation.query.normalized_sql
 
     # Creating another operation with the same normalized query should reuse the existing query

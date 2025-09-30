@@ -25,11 +25,13 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
 
   test "should be valid with required attributes" do
     summary = create(:summary)
-    assert summary.valid?
+
+    assert_predicate summary, :valid?
   end
 
   test "should have correct period types constant" do
     expected_types = %w[hour day week month]
+
     assert_equal expected_types, RailsPulse::Summary::PERIOD_TYPES
   end
 
@@ -40,11 +42,13 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
       execution_count total_time_consumed normalized_sql
       summarizable_id summarizable_type
     ]
+
     assert_equal expected_attributes.sort, RailsPulse::Summary.ransackable_attributes.sort
   end
 
   test "should include ransackable associations" do
     expected_associations = %w[route query]
+
     assert_equal expected_associations.sort, RailsPulse::Summary.ransackable_associations.sort
   end
 
@@ -54,6 +58,7 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
     day_summary = create(:summary, period_type: "day")
 
     hour_summaries = RailsPulse::Summary.for_period_type("hour")
+
     assert_includes hour_summaries, hour_summary
     assert_not_includes hour_summaries, day_summary
 
@@ -65,6 +70,7 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
     old_summary = create(:summary, period_start: 2.days.ago.beginning_of_hour)
 
     range_summaries = RailsPulse::Summary.for_date_range(start_date, end_date)
+
     assert_includes range_summaries, recent_summary
     assert_not_includes range_summaries, old_summary
 
@@ -73,17 +79,20 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
     route_summary = create(:summary, summarizable_type: "RailsPulse::Route")
 
     request_summaries = RailsPulse::Summary.for_requests
+
     assert_includes request_summaries, request_summary
     assert_not_includes request_summaries, route_summary
 
     # Test for_routes scope
     route_summaries = RailsPulse::Summary.for_routes
+
     assert_includes route_summaries, route_summary
     assert_not_includes route_summaries, request_summary
 
     # Test for_queries scope
     query_summary = create(:summary, summarizable_type: "RailsPulse::Query")
     query_summaries = RailsPulse::Summary.for_queries
+
     assert_includes query_summaries, query_summary
     assert_not_includes query_summaries, route_summary
 
@@ -92,6 +101,7 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
     specific_summary = create(:summary, summarizable_type: "RailsPulse::Request", summarizable_id: 1)
 
     overall_summaries = RailsPulse::Summary.overall_requests
+
     assert_includes overall_summaries, overall_summary
     assert_not_includes overall_summaries, specific_summary
   end
@@ -132,6 +142,7 @@ class RailsPulse::SummaryTest < ActiveSupport::TestCase
     new_summary = create(:summary, period_start: 1.hour.ago)
 
     recent_summaries = RailsPulse::Summary.recent
+
     assert_equal [ new_summary, old_summary ], recent_summaries.to_a
   end
 end

@@ -110,24 +110,28 @@ class InstallGeneratorTest < Rails::Generators::TestCase
 
     # Simulate the migration execution
     schema_file = File.join(destination_root, "db/rails_pulse_schema.rb")
-    assert File.exist?(schema_file), "Schema file should exist"
+
+    assert_path_exists schema_file, "Schema file should exist"
 
     # Load the schema file and verify it defines the lambda
     load schema_file
+
     assert defined?(RailsPulse::Schema), "RailsPulse::Schema should be defined"
-    assert RailsPulse::Schema.is_a?(Proc), "RailsPulse::Schema should be a lambda"
+    assert_kind_of Proc, RailsPulse::Schema, "RailsPulse::Schema should be a lambda"
   end
 
   private
 
   def assert_migration(relative_path, &block)
     file_name = migration_file_name(relative_path)
+
     assert file_name, "Expected migration #{relative_path} to exist"
     assert_file file_name, &block
   end
 
   def assert_no_migration(relative_path)
     file_name = migration_file_name(relative_path)
+
     assert_not file_name, "Expected migration #{relative_path} not to exist"
   end
 

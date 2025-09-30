@@ -21,32 +21,38 @@ class RailsPulse::RouteTest < ActiveSupport::TestCase
     # Uniqueness validation with scope (test manually for cross-database compatibility)
     existing_route = create(:route, method: "GET", path: "/api/test")
     duplicate_route = build(:route, method: "GET", path: "/api/test")
-    refute duplicate_route.valid?
+
+    refute_predicate duplicate_route, :valid?
     assert_includes duplicate_route.errors[:path], "and method combination must be unique"
   end
 
   test "should be valid with required attributes" do
     route = create(:route)
-    assert route.valid?
+
+    assert_predicate route, :valid?
   end
 
   test "should include ransackable attributes" do
     expected_attributes = %w[path average_response_time_ms max_response_time_ms request_count requests_per_minute occurred_at requests_occurred_at error_count error_rate_percentage status_indicator]
+
     assert_equal expected_attributes.sort, RailsPulse::Route.ransackable_attributes.sort
   end
 
   test "should include ransackable associations" do
     expected_associations = %w[requests]
+
     assert_equal expected_associations.sort, RailsPulse::Route.ransackable_associations.sort
   end
 
   test "should return path as breadcrumb" do
     route = create(:route, path: "/api/users")
+
     assert_equal "/api/users", route.to_breadcrumb
   end
 
   test "should return path and method" do
     route = create(:route, method: "POST", path: "/api/users")
+
     assert_equal "/api/users POST", route.path_and_method
   end
 
@@ -89,7 +95,8 @@ class RailsPulse::RouteTest < ActiveSupport::TestCase
 
     # The average should be calculated from all routes
     average = RailsPulse::Route.average_response_time
-    assert_equal 150.0, average
+
+    assert_in_delta(150.0, average)
   end
 
   test "should handle restrict_with_exception on dependent destroy" do

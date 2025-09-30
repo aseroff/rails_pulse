@@ -99,12 +99,14 @@ class QueriesIndexPageTest < SharedIndexPageTest
     within("table thead") do
       click_link "Executions"
     end
+
     assert_selector "table tbody tr", wait: 3
 
     # Test Average Query Time column sorting
     within("table thead") do
       click_link "Average Query Time"
     end
+
     assert_selector "table tbody tr", wait: 3
   end
 

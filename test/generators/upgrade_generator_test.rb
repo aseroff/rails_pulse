@@ -19,7 +19,8 @@ class UpgradeGeneratorTest < Rails::Generators::TestCase
   test "generator loads successfully" do
     # Basic smoke test that the generator can be instantiated
     generator = RailsPulse::Generators::UpgradeGenerator.new
-    assert generator.is_a?(RailsPulse::Generators::UpgradeGenerator)
+
+    assert_kind_of RailsPulse::Generators::UpgradeGenerator, generator
   end
 
   test "detects not installed state" do
@@ -33,21 +34,23 @@ class UpgradeGeneratorTest < Rails::Generators::TestCase
     end
 
     # In test mode the generator just runs without the exit behavior
-    assert output.is_a?(String), "Should return output string"
+    assert_kind_of String, output, "Should return output string"
   end
 
   test "schema file is created by setup" do
     # Check that our setup method created the schema file
-    assert File.exist?(File.join(destination_root, "db/rails_pulse_schema.rb"))
+    assert_path_exists File.join(destination_root, "db/rails_pulse_schema.rb")
 
     content = File.read(File.join(destination_root, "db/rails_pulse_schema.rb"))
+
     assert_includes content, "RailsPulse::Schema"
   end
 
   test "generator has correct source root" do
     # Test that the generator can find its templates
     generator = RailsPulse::Generators::UpgradeGenerator.new
-    assert generator.class.source_root.to_s.include?("generators/rails_pulse")
+
+    assert_includes generator.class.source_root.to_s, "generators/rails_pulse"
   end
 
   private
@@ -99,6 +102,7 @@ class UpgradeGeneratorTest < Rails::Generators::TestCase
 
   def assert_migration(relative_path, &block)
     file_name = migration_file_name(relative_path)
+
     assert file_name, "Expected migration #{relative_path} to exist"
     assert_file file_name, &block
   end

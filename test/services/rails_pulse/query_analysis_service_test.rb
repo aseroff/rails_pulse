@@ -26,9 +26,9 @@ module RailsPulse
       assert_equal "SELECT", characteristics[:query_type]
       assert_equal 1, characteristics[:table_count]
       assert_equal 0, characteristics[:join_count]
-      assert_equal false, characteristics[:has_subqueries]
-      assert_equal false, characteristics[:has_limit]
-      assert_equal false, characteristics[:has_order_by]
+      assert characteristics[:has_subqueries]
+      assert characteristics[:has_limit]
+      assert characteristics[:has_order_by]
     end
 
     test "detects pattern-based issues" do
@@ -38,6 +38,7 @@ module RailsPulse
 
       pattern_issues = results[:query_characteristics][:pattern_issues]
       select_star_issue = pattern_issues.find { |issue| issue[:type] == "select_star" }
+
       assert_not_nil select_star_issue
       assert_equal "info", select_star_issue[:severity]
     end
@@ -48,6 +49,7 @@ module RailsPulse
 
       pattern_issues = results[:query_characteristics][:pattern_issues]
       missing_where_issue = pattern_issues.find { |issue| issue[:type] == "missing_where_clause" }
+
       assert_not_nil missing_where_issue
       assert_equal "warning", missing_where_issue[:severity]
     end
@@ -67,10 +69,12 @@ module RailsPulse
 
       # Should have suggestions for both SELECT * and missing LIMIT
       suggestions = results[:suggestions]
-      assert suggestions.length > 0
+
+      assert_operator suggestions.length, :>, 0
 
       # Check that we get actionable suggestions
       optimization_suggestion = suggestions.find { |s| s[:type] == "optimization" }
+
       assert_not_nil optimization_suggestion
       assert_not_nil optimization_suggestion[:action]
       assert_not_nil optimization_suggestion[:benefit]
@@ -85,7 +89,7 @@ module RailsPulse
       assert_not_nil @query.analyzed_at
       assert_not_nil @query.query_stats
       assert_not_nil @query.backtrace_analysis
-      assert @query.analyzed?
+      assert_predicate @query, :analyzed?
     end
 
     test "handles queries without recent operations gracefully" do
@@ -115,7 +119,7 @@ module RailsPulse
       n_plus_one_result = results[:backtrace_analysis][:potential_n_plus_one]
 
       assert n_plus_one_result[:detected], "Expected N+1 pattern to be detected with 11 operations in same minute"
-      assert n_plus_one_result[:suspicious_periods].any?, "Expected suspicious periods to be identified"
+      assert_predicate n_plus_one_result[:suspicious_periods], :any?, "Expected suspicious periods to be identified"
     end
 
     test "calculates complexity score correctly" do
@@ -133,7 +137,7 @@ module RailsPulse
       results = QueryAnalysisService.analyze_query(complex_query.id)
       characteristics = results[:query_characteristics]
 
-      assert characteristics[:estimated_complexity] > 10
+      assert_operator characteristics[:estimated_complexity], :>, 10
       assert_equal 3, characteristics[:table_count]
       assert_equal 2, characteristics[:join_count]
       assert characteristics[:has_group_by]

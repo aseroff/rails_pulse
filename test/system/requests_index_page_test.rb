@@ -100,12 +100,14 @@ class RequestsIndexPageTest < SharedIndexPageTest
     within("table thead") do
       click_link "Response Time"
     end
+
     assert_selector "table tbody tr", wait: 3
 
     # Test Status column sorting
     within("table thead") do
       click_link "Status"
     end
+
     assert_selector "table tbody tr", wait: 3
   end
 

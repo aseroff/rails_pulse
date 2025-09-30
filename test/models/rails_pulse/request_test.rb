@@ -27,13 +27,15 @@ class RailsPulse::RequestTest < ActiveSupport::TestCase
     # Uniqueness validation (test manually for cross-database compatibility)
     existing_request = create(:request)
     duplicate_request = build(:request, request_uuid: existing_request.request_uuid)
-    refute duplicate_request.valid?
+
+    refute_predicate duplicate_request, :valid?
     assert_includes duplicate_request.errors[:request_uuid], "has already been taken"
   end
 
   test "should be valid with required attributes" do
     request = create(:request)
-    assert request.valid?
+
+    assert_predicate request, :valid?
   end
 
   # Uniqueness validation is covered by shoulda matcher above
@@ -57,16 +59,19 @@ class RailsPulse::RequestTest < ActiveSupport::TestCase
 
     # The to_s method calls getlocal, so we need to expect the local time format
     expected_format = time.getlocal.strftime("%b %d, %Y %l:%M %p")
+
     assert_equal expected_format, request.to_s
   end
 
   test "should include ransackable attributes" do
     expected_attributes = %w[id route_id occurred_at duration status status_indicator route_path]
+
     assert_equal expected_attributes.sort, RailsPulse::Request.ransackable_attributes.sort
   end
 
   test "should include ransackable associations" do
     expected_associations = %w[route]
+
     assert_equal expected_associations.sort, RailsPulse::Request.ransackable_associations.sort
   end
 
@@ -107,9 +112,9 @@ class RailsPulse::RequestTest < ActiveSupport::TestCase
     critical_request = create(:request, duration: 4000.0)   # exactly at critical threshold
 
     # All should be valid
-    assert slow_request.valid?
-    assert very_slow_request.valid?
-    assert critical_request.valid?
+    assert_predicate slow_request, :valid?
+    assert_predicate very_slow_request, :valid?
+    assert_predicate critical_request, :valid?
   end
 
   test "request_uuid should be auto-generated if not provided" do
@@ -141,7 +146,7 @@ class RailsPulse::RequestTest < ActiveSupport::TestCase
         is_error: status_code >= 400
       )
 
-      assert request.valid?
+      assert_predicate request, :valid?
       assert_equal status_code, request.status
       assert_equal (status_code >= 400), request.is_error
     end

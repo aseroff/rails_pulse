@@ -184,13 +184,14 @@ class QueriesShowPageTest < SharedIndexPageTest
     value_extractor = column_config[:value_extractor] || ->(text) { text.gsub(/[^\d.]/, "").to_f }
 
     first(:link, column_name).click
+
     assert_selector "table tbody tr", wait: 3
 
     # Verify sort order by comparing first two rows (skip for SQLite if insufficient data)
     rows = all("tbody tr")
     if rows.length < 2 && ENV["DB"] == "sqlite"
       # SQLite test data might have insufficient rows for sorting comparison
-      assert rows.length > 0, "Should have at least one row for #{column_name} sorting"
+      assert_operator rows.length, :>, 0, "Should have at least one row for #{column_name} sorting"
       return
     end
 
@@ -209,6 +210,7 @@ class QueriesShowPageTest < SharedIndexPageTest
 
     # Test sorting by clicking the same column again (should toggle sort direction)
     first(:link, column_name).click
+
     assert_selector "table tbody tr", wait: 3
 
     # Get new values after re-sorting
@@ -241,7 +243,8 @@ class QueriesShowPageTest < SharedIndexPageTest
     # Target the main operations table specifically (first table with .table class)
     within("turbo-frame#index_table") do
       table_rows = all("table tbody tr")
-      assert table_rows.length > 0, "Table should have data rows"
+
+      assert_operator table_rows.length, :>, 0, "Table should have data rows"
 
       # For query show page, validate the operations table with different column layout
       validate_query_show_operations_table(table_rows, expected_data, filter_applied)
@@ -257,7 +260,7 @@ class QueriesShowPageTest < SharedIndexPageTest
 
     # Validate that we have data when expected
     if expected_operations && expected_operations.any?
-      assert row_count > 0, "Should have operations data in table after applying filter: #{filter_applied}"
+      assert_operator row_count, :>, 0, "Should have operations data in table after applying filter: #{filter_applied}"
     end
 
     # If no rows, that might be valid (e.g., critical filter might return empty results)
@@ -267,15 +270,18 @@ class QueriesShowPageTest < SharedIndexPageTest
     (0...row_count).each do |index|
       # Re-find the specific row each time
       row_selector = "table tbody tr:nth-child(#{index + 1})"
+
       assert_selector row_selector, wait: 3
 
       within(row_selector) do
         cells = all("td")
-        assert cells.length >= 2, "Operation row #{index + 1} should have at least 2 columns (occurred_at, duration)"
+
+        assert_operator cells.length, :>=, 2, "Operation row #{index + 1} should have at least 2 columns (occurred_at, duration)"
 
         # Validate occurred_at (first column) - should contain timestamp text
         occurred_at_text = find("td:nth-child(1)").text
-        assert occurred_at_text.length > 0, "Occurred at should not be empty in row #{index + 1}"
+
+        assert_operator occurred_at_text.length, :>, 0, "Occurred at should not be empty in row #{index + 1}"
 
         # Validate duration (second column) - should contain "ms"
         duration_text = find("td:nth-child(2)").text
@@ -290,7 +296,7 @@ class QueriesShowPageTest < SharedIndexPageTest
 
     # Basic coverage validation
     if expected_operations && expected_operations.any?
-      assert row_count > 0, "Should have operations data in table"
+      assert_operator row_count, :>, 0, "Should have operations data in table"
     end
   end
 
@@ -345,7 +351,7 @@ class QueriesShowPageTest < SharedIndexPageTest
     re_sorted_rows = all("turbo-frame#index_table table tbody tr").map(&:text)
 
     # Table should still have data and be responsive to sorting
-    assert re_sorted_rows.length > 0, "Table should have data after column selection and re-sorting"
+    assert_operator re_sorted_rows.length, :>, 0, "Table should have data after column selection and re-sorting"
   end
 
   # Query show specific test
