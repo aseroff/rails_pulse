@@ -183,6 +183,13 @@ Rails Pulse follows the **solid_queue pattern** for database management:
 3. **Migration Loading**: Installation migration loads and executes the schema file at runtime
 4. **Future Updates**: Individual migrations in `db/rails_pulse_migrate/` for incremental changes
 
+### Avoiding Duplicate Migrations
+
+To prevent conflicts when running generators multiple times:
+- Installation migrations use timestamp-based class names (e.g., `InstallRailsPulseTables20250930105043`)
+- This ensures each generated migration has a unique class name
+- Safe to run generators multiple times without class name conflicts
+
 ### Migration Approach
 
 The installation migration doesn't duplicate table definitions. Instead, it:

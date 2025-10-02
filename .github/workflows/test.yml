@@ -84,7 +84,7 @@ jobs:
           "8.0.0") GEMFILE=gemfiles/rails_8_0.gemfile ;;
         esac
 
-        BUNDLE_GEMFILE=$GEMFILE bundle exec rails test:all
+        BUNDLE_GEMFILE=$GEMFILE bundle exec rake test:all
 
   lint:
     runs-on: ubuntu-latest

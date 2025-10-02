@@ -31,6 +31,43 @@ namespace :test do
     sh "rails test test/models test/controllers test/helpers test/services test/support test/instrumentation test/integration test/system"
   end
 
+  desc "Reset all databases for local matrix testing"
+  task :reset_databases do
+    databases = ["sqlite3", "postgresql", "mysql2"]
+
+    puts "\n" + "=" * 80
+    puts "🗄️  Resetting databases for matrix testing"
+    puts "=" * 80
+
+    databases.each do |database|
+      puts "\n🔄 Resetting #{database.upcase} database..."
+
+      begin
+        # Use .env file for database credentials, just set DB type
+        sh "DB=#{database} FORCE_DB_CONFIG=true rails db:drop db:create"
+
+        # Remove schema.rb to prevent Rails version conflicts
+        schema_file = "test/dummy/db/schema.rb"
+        if File.exist?(schema_file)
+          File.delete(schema_file)
+          puts "   Removed schema.rb (will be regenerated)"
+        end
+
+        puts "✅ #{database.upcase} database reset successfully"
+
+      rescue => e
+        puts "❌ Failed to reset #{database.upcase} database: #{e.message}"
+        puts "   Make sure #{database} is installed and running"
+        puts "   Check your .env file for correct #{database} credentials"
+      end
+    end
+
+    puts "\n" + "=" * 80
+    puts "🏁 Database Reset Complete"
+    puts "You can now run: rake test:matrix"
+    puts "=" * 80
+  end
+
   desc "Run tests across all database and Rails version combinations (local only - CI uses sqlite3 + postgresql)"
   task :matrix do
     databases = [ "sqlite3", "postgresql", "mysql2" ]
@@ -48,36 +85,9 @@ namespace :test do
         begin
           gemfile = "gemfiles/#{rails_version.gsub('-', '_')}.gemfile"
 
-          # Set environment variables
-          env_vars = {
-            "DB" => database,
-            "BUNDLE_GEMFILE" => gemfile,
-            "FORCE_DB_CONFIG" => "true"
-          }
-
-          # Add database-specific environment variables
-          case database
-          when "postgresql"
-            env_vars.merge!({
-              "POSTGRES_USERNAME" => ENV.fetch("POSTGRES_USERNAME", "postgres"),
-              "POSTGRES_PASSWORD" => ENV.fetch("POSTGRES_PASSWORD", ""),
-              "POSTGRES_HOST" => ENV.fetch("POSTGRES_HOST", "localhost"),
-              "POSTGRES_PORT" => ENV.fetch("POSTGRES_PORT", "5432")
-            })
-          when "mysql2"
-            env_vars.merge!({
-              "MYSQL_USERNAME" => ENV.fetch("MYSQL_USERNAME", "root"),
-              "MYSQL_PASSWORD" => ENV.fetch("MYSQL_PASSWORD", "password"),
-              "MYSQL_HOST" => ENV.fetch("MYSQL_HOST", "localhost"),
-              "MYSQL_PORT" => ENV.fetch("MYSQL_PORT", "3306")
-            })
-          end
-
-          # Build environment string
-          env_string = env_vars.map { |k, v| "#{k}=#{v}" }.join(" ")
-
-          # Run the test command
-          sh "#{env_string} bundle exec rails test:all"
+          # Use .env file for database credentials, just set required variables
+          # Use rake test:all (custom task) instead of rails test:all (includes generators)
+          sh "DB=#{database} BUNDLE_GEMFILE=#{gemfile} FORCE_DB_CONFIG=true bundle exec rake test:all"
 
           puts "✅ PASSED: #{database} + #{rails_version}"
 

@@ -104,8 +104,13 @@ module RailsPulse
     end
 
     test "detects N+1 query patterns" do
+      # Clean up any existing operations that might interfere
+      RailsPulse::Operation.delete_all
+      RailsPulse::Request.delete_all
+      RailsPulse::Route.delete_all
+
       # Create a completely isolated query for this test
-      query = RailsPulse::Query.create!(normalized_sql: "SELECT * FROM posts WHERE user_id = ?")
+      query = RailsPulse::Query.create!(normalized_sql: "SELECT * FROM posts WHERE user_id = ? /* n_plus_one_test */")
 
       # Use a very specific recent time window that won't conflict with other tests
       base_time = 30.hours.ago  # Within 48 hour window but different from other tests

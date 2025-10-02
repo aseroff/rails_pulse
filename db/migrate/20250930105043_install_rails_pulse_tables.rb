@@ -1,5 +1,5 @@
 # Generated from Rails Pulse schema - automatically loads current schema definition
-class InstallRailsPulseTables < ActiveRecord::Migration[8.0]
+class InstallRailsPulseTables20250930105043 < ActiveRecord::Migration[7.2]
   def change
     # Load and execute the Rails Pulse schema directly
     # This ensures the migration is always in sync with the schema file
