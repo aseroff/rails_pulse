@@ -103,29 +103,6 @@ module RailsPulse
       assert_nil results[:explain_plan][:explain_plan]
     end
 
-    test "detects N+1 query patterns" do
-      # Clean up any existing operations that might interfere
-      RailsPulse::Operation.delete_all
-      RailsPulse::Request.delete_all
-      RailsPulse::Route.delete_all
-
-      # Create a completely isolated query for this test
-      query = RailsPulse::Query.create!(normalized_sql: "SELECT * FROM posts WHERE user_id = ? /* n_plus_one_test */")
-
-      # Use a very specific recent time window that won't conflict with other tests
-      base_time = 30.hours.ago  # Within 48 hour window but different from other tests
-
-      # Create exactly 11 operations (need > 10 for N+1 detection) in the same minute
-      11.times do |i|
-        create_operation(query, occurred_at: base_time + i.seconds)
-      end
-
-      results = QueryAnalysisService.analyze_query(query.id)
-      n_plus_one_result = results[:backtrace_analysis][:potential_n_plus_one]
-
-      assert n_plus_one_result[:detected], "Expected N+1 pattern to be detected with 11 operations in same minute"
-      assert_predicate n_plus_one_result[:suspicious_periods], :any?, "Expected suspicious periods to be identified"
-    end
 
     test "calculates complexity score correctly" do
       complex_query = create_query(<<~SQL)

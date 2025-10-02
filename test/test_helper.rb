@@ -7,6 +7,14 @@ require_relative "../test/dummy/config/environment"
 require "rails/test_help"
 require "factory_bot_rails"
 require "shoulda-matchers"
+require "mocha/minitest"
+
+# Load rails-controller-testing for controller tests
+begin
+  require "rails-controller-testing"
+rescue LoadError
+  puts "Warning: rails-controller-testing not available for testing"
+end
 
 
 class ActiveSupport::TestCase
