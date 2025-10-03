@@ -29,7 +29,17 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
   end
 
   test "should be valid with required attributes" do
-    operation = create(:operation)
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    request = RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+    operation = RailsPulse::Operation.create!(
+      request: request,
+      operation_type: "sql",
+      label: "SELECT * FROM users WHERE id = ?",
+      duration: 45.0,
+      start_time: 10.0,
+      codebase_location: "app/models/user.rb:25",
+      occurred_at: 1.hour.ago
+    )
 
     assert_predicate operation, :valid?
   end
@@ -53,9 +63,11 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
   end
 
   test "should have by_type scope" do
-    request = create(:request)
-    sql_operation = create(:operation, request: request, operation_type: "sql")
-    controller_operation = create(:operation, request: request, operation_type: "controller")
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    request = RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+
+    sql_operation = RailsPulse::Operation.create!(request: request, operation_type: "sql", label: "SELECT * FROM users", duration: 45.0, start_time: 10.0, occurred_at: 1.hour.ago)
+    controller_operation = RailsPulse::Operation.create!(request: request, operation_type: "controller", label: "UsersController#index", duration: 25.0, start_time: 5.0, occurred_at: 1.hour.ago)
 
     sql_operations = RailsPulse::Operation.by_type("sql")
 
@@ -64,31 +76,48 @@ class RailsPulse::OperationTest < ActiveSupport::TestCase
   end
 
   test "should associate query for sql operations" do
-    request = create(:request)
-    operation = build(:operation,
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    request = RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+    operation = RailsPulse::Operation.create!(
       request: request,
       operation_type: "sql",
-      label: "SELECT * FROM users WHERE id = ?"
+      label: "SELECT * FROM users WHERE id = ?",
+      duration: 45.0,
+      start_time: 10.0,
+      occurred_at: 1.hour.ago
     )
-
-    operation.save!
 
     assert_not_nil operation.query
     assert_instance_of RailsPulse::Query, operation.query
+    assert_equal "SELECT * FROM users WHERE id = ?", operation.query.normalized_sql
   end
 
   test "should not associate query for non-sql operations" do
-    request = create(:request)
-    operation = create(:operation, :controller, :without_query,
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    request = RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+    operation = RailsPulse::Operation.create!(
       request: request,
-      label: "UsersController#show"
+      operation_type: "template",
+      label: "render users/index.html.erb",
+      duration: 25.0,
+      start_time: 75.0,
+      occurred_at: 1.hour.ago
     )
 
     assert_nil operation.query
   end
 
   test "should return id as string representation" do
-    operation = create(:operation)
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    request = RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+    operation = RailsPulse::Operation.create!(
+      request: request,
+      operation_type: "sql",
+      label: "SELECT * FROM users WHERE id = ?",
+      duration: 45.0,
+      start_time: 10.0,
+      occurred_at: 1.hour.ago
+    )
 
     assert_equal operation.id, operation.to_s
   end

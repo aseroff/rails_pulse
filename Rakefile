@@ -7,7 +7,7 @@ require "dotenv/load" if File.exist?(".env")
 APP_RAKEFILE = File.expand_path("test/dummy/Rakefile", __dir__)
 load "rails/tasks/engine.rake"
 
-desc "Run core tests (models, helpers, services)"
+desc "Run test suite"
 task :test do
   database = ENV['DB'] || 'sqlite3'
 
@@ -33,7 +33,7 @@ task :test do
   puts "=" * 50
   puts
 
-  sh "rails test test/models test/helpers test/services"
+  sh "rails test test/controllers test/helpers test/instrumentation test/models test/services"
 end
 
 desc "Test all database and Rails version combinations"

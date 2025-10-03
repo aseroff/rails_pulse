@@ -3,8 +3,6 @@ require "test_helper"
 class RailsPulse::ApplicationControllerTest < ActionDispatch::IntegrationTest
   def setup
     ENV["TEST_TYPE"] = "functional"
-    setup_clean_database
-    stub_all_external_dependencies
     super
   end
 

@@ -7,8 +7,6 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
 
   def setup
     ENV["TEST_TYPE"] = "functional"
-    setup_clean_database
-    stub_all_external_dependencies
     super
   end
 
@@ -107,13 +105,13 @@ class RailsPulse::RoutesControllerTest < ActionDispatch::IntegrationTest
 
   def setup_basic_test_data
     # Create a route with some requests
-    @route = FactoryBot.create(:route, path: "/api/test", method: "GET")
-    FactoryBot.create(:request, route: @route, duration: 100, occurred_at: 2.hours.ago, is_error: false)
-    FactoryBot.create(:request, route: @route, duration: 150, occurred_at: 3.hours.ago, is_error: false)
+    @route = RailsPulse::Route.create!(path: "/api/test", method: "GET")
+    RailsPulse::Request.create!(route: @route, duration: 100, occurred_at: 2.hours.ago, is_error: false, status: 200, request_uuid: "test-uuid-1", controller_action: "TestController#action")
+    RailsPulse::Request.create!(route: @route, duration: 150, occurred_at: 3.hours.ago, is_error: false, status: 200, request_uuid: "test-uuid-2", controller_action: "TestController#action")
 
     # Create another route
-    @route2 = FactoryBot.create(:route, path: "/api/other", method: "POST")
-    FactoryBot.create(:request, route: @route2, duration: 200, occurred_at: 4.hours.ago, is_error: true)
+    @route2 = RailsPulse::Route.create!(path: "/api/other", method: "POST")
+    RailsPulse::Request.create!(route: @route2, duration: 200, occurred_at: 4.hours.ago, is_error: true, status: 500, request_uuid: "test-uuid-3", controller_action: "OtherController#action")
 
     # Generate summary data
     service = RailsPulse::SummaryService.new("hour", 1.day.ago.beginning_of_hour)

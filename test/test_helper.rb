@@ -5,7 +5,6 @@ require "dotenv/load" if File.exist?(".env")
 
 require_relative "../test/dummy/config/environment"
 require "rails/test_help"
-require "factory_bot_rails"
 require "shoulda-matchers"
 require "mocha/minitest"
 
@@ -16,6 +15,8 @@ rescue LoadError
   puts "Warning: rails-controller-testing not available for testing"
 end
 
+# Load support files needed for controller tests
+Dir[File.expand_path("support/**/*.rb", __dir__)].each { |f| require f }
 
 class ActiveSupport::TestCase
   # Enable parallel testing for local performance
@@ -24,11 +25,8 @@ class ActiveSupport::TestCase
   # Use Rails' built-in transactional cleanup
   self.use_transactional_tests = true
 
-  include FactoryBot::Syntax::Methods
-
-  # Configure FactoryBot
-  FactoryBot.definition_file_paths = [File.expand_path("factories", __dir__)]
-  FactoryBot.find_definitions
+  # Load all fixtures for faster test execution
+  fixtures :all
 
   # Configure Shoulda Matchers
   Shoulda::Matchers.configure do |config|

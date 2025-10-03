@@ -1,0 +1,35 @@
+users_request_1:
+  route: api_users
+  duration: 150.5
+  status: 200
+  request_uuid: "test-uuid-1"
+  controller_action: "UsersController#index"
+  occurred_at: <%= Time.current - 1.hour %>
+  is_error: false
+
+users_request_2:
+  route: api_users
+  duration: 250.0
+  status: 200
+  request_uuid: "test-uuid-2"
+  controller_action: "UsersController#show"
+  occurred_at: <%= Time.current - 2.hours %>
+  is_error: false
+
+posts_request:
+  route: api_posts
+  duration: 180.0
+  status: 201
+  request_uuid: "test-uuid-3"
+  controller_action: "PostsController#create"
+  occurred_at: <%= Time.current - 1.hour %>
+  is_error: false
+
+error_request:
+  route: api_other
+  duration: 300.0
+  status: 500
+  request_uuid: "test-uuid-4"
+  controller_action: "OtherController#action"
+  occurred_at: <%= Time.current - 3.hours %>
+  is_error: true

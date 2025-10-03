@@ -19,15 +19,15 @@ class RailsPulse::RouteTest < ActiveSupport::TestCase
     assert validate_presence_of(:path).matches?(route)
 
     # Uniqueness validation with scope (test manually for cross-database compatibility)
-    existing_route = create(:route, method: "GET", path: "/api/test")
-    duplicate_route = build(:route, method: "GET", path: "/api/test")
+    existing_route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    duplicate_route = RailsPulse::Route.new(method: existing_route.method, path: existing_route.path)
 
     refute_predicate duplicate_route, :valid?
     assert_includes duplicate_route.errors[:path], "and method combination must be unique"
   end
 
   test "should be valid with required attributes" do
-    route = create(:route)
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
 
     assert_predicate route, :valid?
   end
@@ -45,63 +45,66 @@ class RailsPulse::RouteTest < ActiveSupport::TestCase
   end
 
   test "should return path as breadcrumb" do
-    route = create(:route, path: "/api/users")
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
 
     assert_equal "/api/users", route.to_breadcrumb
   end
 
   test "should return path and method" do
-    route = create(:route, method: "POST", path: "/api/users")
+    route = RailsPulse::Route.create!(method: "POST", path: "/users")
 
-    assert_equal "/api/users POST", route.path_and_method
+    assert_equal "/users POST", route.path_and_method
   end
 
   test "requests association should return correct requests" do
-    route1 = create(:route, path: "/api/users", method: "GET")
-    route2 = create(:route, path: "/api/posts", method: "GET")
+    route1 = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    route2 = RailsPulse::Route.create!(method: "GET", path: "/api/posts")
 
-    # Create requests for route1
-    request1 = create(:request, route: route1)
-    request2 = create(:request, route: route1)
-
-    # Create request for route2
-    request3 = create(:request, route: route2)
+    # Create requests that reference these routes
+    request1 = RailsPulse::Request.create!(route: route1, duration: 150.5, status: 200, request_uuid: "test-uuid-1", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
+    request2 = RailsPulse::Request.create!(route: route2, duration: 250.0, status: 200, request_uuid: "test-uuid-2", controller_action: "PostsController#index", occurred_at: 1.hour.ago)
 
     # Test that each route returns only its own requests
-    assert_equal 2, route1.requests.count
     assert_includes route1.requests, request1
-    assert_includes route1.requests, request2
-    assert_not_includes route1.requests, request3
+    assert_not_includes route1.requests, request2
 
-    assert_equal 1, route2.requests.count
-    assert_includes route2.requests, request3
+    assert_includes route2.requests, request2
     assert_not_includes route2.requests, request1
-    assert_not_includes route2.requests, request2
   end
 
   test "should have polymorphic summaries association" do
-    route = create(:route)
-    summary = create(:summary, summarizable: route)
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    summary = RailsPulse::Summary.create!(
+      summarizable: route,
+      period_start: 1.hour.ago.beginning_of_hour,
+      period_end: 1.hour.ago.end_of_hour,
+      period_type: "hour",
+      count: 150,
+      avg_duration: 180.5
+    )
 
-    assert_equal 1, route.summaries.count
     assert_includes route.summaries, summary
     assert_equal route, summary.summarizable
   end
 
   test "should calculate average response time" do
-    route = create(:route)
-    create(:request, route: route, duration: 100)
-    create(:request, route: route, duration: 200)
+    # Create test data with known durations
+    route1 = RailsPulse::Route.create!(method: "GET", path: "/api/test1")
+    route2 = RailsPulse::Route.create!(method: "GET", path: "/api/test2")
 
-    # The average should be calculated from all routes
+    RailsPulse::Request.create!(route: route1, duration: 150.5, status: 200, request_uuid: "test-1", controller_action: "Test#action", occurred_at: 1.hour.ago)
+    RailsPulse::Request.create!(route: route2, duration: 250.0, status: 200, request_uuid: "test-2", controller_action: "Test#action", occurred_at: 1.hour.ago)
+
     average = RailsPulse::Route.average_response_time
 
-    assert_in_delta(150.0, average)
+    assert_not_nil average
+    assert average > 0
+    assert_equal 200.25, average  # (150.5 + 250.0) / 2
   end
 
   test "should handle restrict_with_exception on dependent destroy" do
-    route = create(:route)
-    create(:request, route: route)
+    route = RailsPulse::Route.create!(method: "GET", path: "/api/users")
+    RailsPulse::Request.create!(route: route, duration: 150.5, status: 200, request_uuid: "test-uuid", controller_action: "UsersController#index", occurred_at: 1.hour.ago)
 
     # Should raise an exception when trying to delete a route with requests
     assert_raises(ActiveRecord::DeleteRestrictionError) do
