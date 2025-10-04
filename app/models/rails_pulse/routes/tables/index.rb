@@ -13,7 +13,9 @@ module RailsPulse
           # Check if we have explicit ransack sorts
           has_sorts = @ransack_query.sorts.any?
 
-          base_query = @ransack_query.result(distinct: false)
+          # Store sorts for later and get result without ordering
+          # This prevents PostgreSQL GROUP BY issues with ORDER BY columns
+          base_query = @ransack_query.result(distinct: false).reorder(nil)
             .joins("INNER JOIN rails_pulse_routes ON rails_pulse_routes.id = rails_pulse_summaries.summarizable_id")
             .where(
               summarizable_type: "RailsPulse::Route",
@@ -39,7 +41,7 @@ module RailsPulse
               "rails_pulse_routes.method as route_method",
               "AVG(rails_pulse_summaries.avg_duration) as avg_duration",
               "MAX(rails_pulse_summaries.max_duration) as max_duration",
-              "SUM(rails_pulse_summaries.count) as count",
+              "SUM(rails_pulse_summaries.count) as request_count",
               "SUM(rails_pulse_summaries.error_count) as error_count",
               "SUM(rails_pulse_summaries.success_count) as success_count"
             )
@@ -55,7 +57,7 @@ module RailsPulse
               grouped_query = grouped_query.order(Arel.sql("AVG(rails_pulse_summaries.avg_duration)").send(direction))
             when "max_duration_sort"
               grouped_query = grouped_query.order(Arel.sql("MAX(rails_pulse_summaries.max_duration)").send(direction))
-            when "count_sort"
+            when "count_sort", "request_count_sort"
               grouped_query = grouped_query.order(Arel.sql("SUM(rails_pulse_summaries.count)").send(direction))
             when "requests_per_minute"
               grouped_query = grouped_query.order(Arel.sql("SUM(rails_pulse_summaries.count) / 60.0").send(direction))
