@@ -2,6 +2,8 @@ require "rails_pulse/version"
 require "rails_pulse/middleware/request_collector"
 require "rails_pulse/middleware/asset_server"
 require "rails_pulse/subscribers/operation_subscriber"
+require "rails_pulse/job_run_collector"
+require "rails_pulse/active_job_extensions"
 require "request_store"
 require "rack/static"
 require "rails_charts"
@@ -52,6 +54,12 @@ module RailsPulse
 
     initializer "rails_pulse.ransack", after: "ransack.initialize" do
       # Ensure Ransack is loaded before our models
+    end
+
+    initializer "rails_pulse.active_job" do
+      ActiveSupport.on_load(:active_job) do
+        include RailsPulse::ActiveJobExtensions
+      end
     end
 
     initializer "rails_pulse.database_configuration", before: "active_record.initialize_timezone" do
