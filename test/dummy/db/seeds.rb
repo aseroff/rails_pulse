@@ -415,6 +415,296 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
   puts "- #{RailsPulse::Request.count} requests"
   puts "- #{RailsPulse::Operation.count} operations"
 
+  # Generate background job data
+  puts "\nGenerating background job data..."
+
+  # Clear existing job data
+  RailsPulse::JobRun.destroy_all
+  RailsPulse::Job.destroy_all
+
+  # Define realistic job classes
+  job_definitions = [
+    {
+      name: "UserMailerJob",
+      queue_name: "mailers",
+      base_duration: 150,
+      variance: 100,
+      error_rate: 0.02,
+      runs_per_day: 50
+    },
+    {
+      name: "DataExportJob",
+      queue_name: "default",
+      base_duration: 2500,
+      variance: 1500,
+      error_rate: 0.08,
+      runs_per_day: 12
+    },
+    {
+      name: "ImageProcessingJob",
+      queue_name: "media",
+      base_duration: 800,
+      variance: 400,
+      error_rate: 0.05,
+      runs_per_day: 35
+    },
+    {
+      name: "ReportGeneratorJob",
+      queue_name: "reports",
+      base_duration: 5000,
+      variance: 3000,
+      error_rate: 0.10,
+      runs_per_day: 8
+    },
+    {
+      name: "CacheWarmingJob",
+      queue_name: "default",
+      base_duration: 450,
+      variance: 200,
+      error_rate: 0.01,
+      runs_per_day: 100
+    },
+    {
+      name: "CleanupJob",
+      queue_name: "maintenance",
+      base_duration: 1200,
+      variance: 600,
+      error_rate: 0.03,
+      runs_per_day: 4
+    },
+    {
+      name: "NotificationJob",
+      queue_name: "notifications",
+      base_duration: 200,
+      variance: 150,
+      error_rate: 0.04,
+      runs_per_day: 80
+    },
+    {
+      name: "AnalyticsJob",
+      queue_name: "analytics",
+      base_duration: 3500,
+      variance: 2000,
+      error_rate: 0.06,
+      runs_per_day: 6
+    },
+    {
+      name: "WebhookDeliveryJob",
+      queue_name: "webhooks",
+      base_duration: 350,
+      variance: 250,
+      error_rate: 0.15,
+      runs_per_day: 45
+    },
+    {
+      name: "ImportJob",
+      queue_name: "imports",
+      base_duration: 8000,
+      variance: 5000,
+      error_rate: 0.12,
+      runs_per_day: 3
+    }
+  ]
+
+  # Create job records
+  created_jobs = job_definitions.map do |job_def|
+    RailsPulse::Job.create!(
+      name: job_def[:name],
+      queue_name: job_def[:queue_name]
+    )
+  end
+
+  # Generate historical job runs
+  total_days = 7 # 1 week of data
+  job_runs_count = 0
+
+  job_definitions.each_with_index do |job_def, index|
+    job = created_jobs[index]
+
+    total_days.times do |day_offset|
+      day_start = (total_days - day_offset).days.ago.beginning_of_day
+      # Reduce runs per day to 20% of original for faster seeding
+      runs_for_day = (job_def[:runs_per_day] * 0.2).to_i
+
+      # Add some variance to runs per day
+      runs_for_day += rand(-2..2)
+      runs_for_day = [runs_for_day, 1].max
+
+      runs_for_day.times do
+        occurred_at = day_start + rand(0..86400).seconds
+
+        # Calculate duration with variance
+        duration = job_def[:base_duration] + rand(-job_def[:variance]..job_def[:variance])
+        duration = [duration, 10].max
+
+        # Determine status
+        rand_val = rand
+        status = if rand_val < job_def[:error_rate]
+          ["failed", "discarded"].sample
+        elsif rand_val < job_def[:error_rate] + 0.03
+          "retried"
+        else
+          "success"
+        end
+
+        # Attempts based on status
+        attempts = case status
+        when "success"
+          1
+        when "retried"
+          rand(2..3)
+        when "failed"
+          rand(1..3)
+        when "discarded"
+          rand(3..5)
+        else
+          1
+        end
+
+        # Error details for failed jobs
+        error_class = nil
+        error_message = nil
+
+        if ["failed", "discarded"].include?(status)
+          error_classes = [
+            "ActiveRecord::RecordInvalid",
+            "Net::ReadTimeout",
+            "StandardError",
+            "ArgumentError",
+            "ActiveJob::DeserializationError",
+            "JSON::ParserError",
+            "Redis::ConnectionError"
+          ]
+
+          error_messages = [
+            "Validation failed: Email can't be blank",
+            "Connection timeout after 30 seconds",
+            "Unable to process request",
+            "Invalid argument provided",
+            "Failed to deserialize job arguments",
+            "Unexpected token in JSON",
+            "Connection refused - unable to connect to Redis"
+          ]
+
+          error_class = error_classes.sample
+          error_message = error_messages.sample
+        end
+
+        # Enqueued time (a few seconds before occurred_at)
+        enqueued_at = occurred_at - rand(1..30).seconds
+
+        # Create job run
+        job_run = RailsPulse::JobRun.create!(
+          job: job,
+          run_id: SecureRandom.uuid,
+          status: status,
+          duration: duration,
+          occurred_at: occurred_at,
+          enqueued_at: enqueued_at,
+          attempts: attempts,
+          adapter: ["active_job", "sidekiq", "solid_queue"].sample,
+          error_class: error_class,
+          error_message: error_message
+        )
+
+        job_runs_count += 1
+
+        # Create some operations for this job run (reduced for faster seeding)
+        operation_count = case job_def[:name]
+        when "UserMailerJob", "NotificationJob"
+          rand(1..3)
+        when "DataExportJob", "ReportGeneratorJob", "AnalyticsJob", "ImportJob"
+          rand(3..8)
+        when "ImageProcessingJob"
+          rand(2..5)
+        when "CacheWarmingJob"
+          rand(2..4)
+        when "WebhookDeliveryJob"
+          rand(1..3)
+        when "CleanupJob"
+          rand(2..5)
+        else
+          rand(1..3)
+        end
+
+        current_time = 0.0
+        operation_count.times do
+          operation_type = ["sql", "template", "controller"].sample
+
+          operation_duration = case operation_type
+          when "sql"
+            rand(10..300)
+          when "template"
+            rand(50..150)
+          when "controller"
+            rand(20..100)
+          end
+
+          # Assign query for SQL operations
+          query = if operation_type == "sql" && created_queries.any?
+            created_queries.sample
+          else
+            nil
+          end
+
+          operation_label = case operation_type
+          when "sql"
+            query&.normalized_sql&.split(" ")&.first(5)&.join(" ") || "SQL Query"
+          when "template"
+            ["layouts/application", "mailers/user_mailer", "jobs/export"].sample
+          when "controller"
+            ["JobController#perform", "Processing job", "Job execution"].sample
+          end
+
+          codebase_location = case job_def[:name]
+          when "UserMailerJob"
+            "app/mailers/user_mailer.rb:#{rand(10..50)}"
+          when "DataExportJob"
+            "app/jobs/data_export_job.rb:#{rand(20..80)}"
+          when "ImageProcessingJob"
+            "app/jobs/image_processing_job.rb:#{rand(15..60)}"
+          when "ReportGeneratorJob"
+            "app/jobs/report_generator_job.rb:#{rand(25..100)}"
+          when "CacheWarmingJob"
+            "app/jobs/cache_warming_job.rb:#{rand(10..40)}"
+          when "CleanupJob"
+            "app/jobs/cleanup_job.rb:#{rand(15..50)}"
+          when "NotificationJob"
+            "app/jobs/notification_job.rb:#{rand(10..45)}"
+          when "AnalyticsJob"
+            "app/jobs/analytics_job.rb:#{rand(30..90)}"
+          when "WebhookDeliveryJob"
+            "app/jobs/webhook_delivery_job.rb:#{rand(15..55)}"
+          when "ImportJob"
+            "app/jobs/import_job.rb:#{rand(40..120)}"
+          else
+            "app/jobs/application_job.rb:#{rand(5..30)}"
+          end
+
+          RailsPulse::Operation.create!(
+            job_run: job_run,
+            query: query,
+            operation_type: operation_type,
+            label: operation_label,
+            duration: operation_duration,
+            codebase_location: codebase_location,
+            start_time: current_time,
+            occurred_at: occurred_at
+          )
+
+          current_time += operation_duration
+        end
+      end
+
+      print "." if (day_offset % 5 == 0)
+    end
+  end
+
+  puts "\n\nGenerated background job data:"
+  puts "- #{RailsPulse::Job.count} job classes"
+  puts "- #{job_runs_count} job runs"
+  puts "- #{RailsPulse::Operation.where.not(job_run_id: nil).count} job operations"
+
   # Add some additional user/post data for more realistic scenarios
   first_names = %w[Isabella Jack Kate Liam Maya Noah Olivia Parker Quinn Ruby Sam Tara Ulysses Victoria William Xavier Yara Zoe Alexander Benjamin Charlotte Daniel Elizabeth Felix Gabriel Hannah Isaac Julia Kevin Luna Marcus Natalie Oscar Penelope]
   last_names = %w[Anderson Thomas Jackson White Harris Martin Thompson Garcia Martinez Robinson Clark Rodriguez Lewis Lee Walker Hall Allen Young Hernandez King Wright Lopez Hill Green Adams Baker Gonzalez Nelson Carter Mitchell]
@@ -540,8 +830,12 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
   puts "Queries: #{RailsPulse::Query.count}"
   puts "Requests: #{RailsPulse::Request.count}"
   puts "Operations: #{RailsPulse::Operation.count}"
+  puts "Jobs: #{RailsPulse::Job.count}"
+  puts "Job Runs: #{RailsPulse::JobRun.count}"
   puts "Average request duration: #{RailsPulse::Request.average(:duration).to_f.round(2)} ms"
-  puts "Error rate: #{(RailsPulse::Request.where(is_error: true).count.to_f / RailsPulse::Request.count * 100).round(2)}%"
+  puts "Average job duration: #{RailsPulse::JobRun.average(:duration).to_f.round(2)} ms"
+  puts "Request error rate: #{(RailsPulse::Request.where(is_error: true).count.to_f / RailsPulse::Request.count * 100).round(2)}%"
+  puts "Job failure rate: #{(RailsPulse::JobRun.where(status: %w[failed discarded]).count.to_f / RailsPulse::JobRun.count * 100).round(2)}%"
 
   # Generate day summaries for all historical data
   puts "\nGenerating day summaries for all historical data..."

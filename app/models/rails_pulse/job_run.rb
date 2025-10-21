@@ -21,6 +21,14 @@ module RailsPulse
     validates :status, inclusion: { in: STATUSES }
     validates :occurred_at, presence: true
 
+    def self.ransackable_attributes(auth_object = nil)
+      %w[id job_id run_id status occurred_at duration attempts adapter]
+    end
+
+    def self.ransackable_associations(auth_object = nil)
+      %w[job operations]
+    end
+
     scope :successful, -> { where(status: "success") }
     scope :failed, -> { where(status: %w[failed discarded]) }
     scope :recent, -> { order(occurred_at: :desc) }

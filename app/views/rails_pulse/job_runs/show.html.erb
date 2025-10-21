@@ -1,0 +1,153 @@
+<div class="container-md p-5">
+  <div class="mb-5">
+    <nav class="breadcrumb mb-2">
+      <%= link_to "Jobs", jobs_path, class: "breadcrumb__item" %>
+      <span class="breadcrumb__separator">/</span>
+      <%= link_to @job.name, job_path(@job), class: "breadcrumb__item" %>
+      <span class="breadcrumb__separator">/</span>
+      <span class="breadcrumb__item breadcrumb__item--current">Run <%= @run.run_id.to_s.truncate(12) %></span>
+    </nav>
+    <h1 class="font-semibold text-lg">Job Run Details</h1>
+  </div>
+
+  <div class="row mb-5">
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Status</div>
+        <div class="metric-card__value">
+          <span class="badge badge--<%= @run.status %>">
+            <%= @run.status.humanize %>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Duration</div>
+        <div class="metric-card__value"><%= number_to_human(@run.duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Attempts</div>
+        <div class="metric-card__value"><%= @run.attempts %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Occurred At</div>
+        <div class="metric-card__value text-sm"><%= @run.occurred_at.strftime("%b %d, %Y %l:%M:%S %p") %></div>
+      </div>
+    </div>
+    <% if @run.enqueued_at %>
+      <div class="grid-item block">
+        <div class="metric-card">
+          <div class="metric-card__label">Enqueued At</div>
+          <div class="metric-card__value text-sm"><%= @run.enqueued_at.strftime("%b %d, %Y %l:%M:%S %p") %></div>
+        </div>
+      </div>
+    <% end %>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Adapter</div>
+        <div class="metric-card__value text-sm"><%= @run.adapter || 'active_job' %></div>
+      </div>
+    </div>
+  </div>
+
+  <% if @run.error_class.present? %>
+    <%= render 'rails_pulse/components/panel', { title: 'Error Details', card_classes: 'mb-5 card--negative' } do %>
+      <div class="mb-3">
+        <div class="text-sm text-subtle mb-1">Error Class</div>
+        <div class="font-mono text-negative"><%= @run.error_class %></div>
+      </div>
+      <% if @run.error_message.present? %>
+        <div>
+          <div class="text-sm text-subtle mb-1">Error Message</div>
+          <div class="font-mono text-sm"><%= @run.error_message %></div>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% if @run.arguments.present? %>
+    <%= render 'rails_pulse/components/panel', { title: 'Arguments', card_classes: 'mb-5' } do %>
+      <pre class="font-mono text-sm overflow-x-auto"><%= JSON.pretty_generate(JSON.parse(@run.arguments)) rescue @run.arguments %></pre>
+    <% end %>
+  <% end %>
+
+  <%= render 'rails_pulse/components/panel', { title: 'Operations' } do %>
+    <% if @operations.any? %>
+      <div class="mb-4">
+        <div class="text-sm text-subtle">
+          Total Operations: <%= @operations.count %> |
+          Total Duration: <%= number_to_human(@operations.sum(:duration), units: { unit: "ms", thousand: "s" }, precision: 2) %>
+        </div>
+      </div>
+
+      <% if @operations_by_type.any? %>
+        <% @operations_by_type.each do |type, ops| %>
+          <div class="mb-5">
+            <h3 class="font-medium mb-2"><%= type.humanize %> Operations (<%= ops.count %>)</h3>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Label</th>
+                    <th class="text-end">Duration</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% ops.sort_by(&:duration).reverse.each do |op| %>
+                    <tr>
+                      <td class="font-mono text-sm"><%= op.label.truncate(80) %></td>
+                      <td class="text-end"><%= number_to_human(op.duration, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                      <td class="text-sm text-subtle"><%= op.codebase_location&.truncate(60) || '-' %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% if @sql_operations.any? %>
+        <div class="mt-5">
+          <h3 class="font-medium mb-2">SQL Queries (<%= @sql_operations.count %>)</h3>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th class="text-end">Duration</th>
+                  <th>Query Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @sql_operations.each do |op| %>
+                  <tr>
+                    <td class="font-mono text-sm"><%= op.label.truncate(100) %></td>
+                    <td class="text-end"><%= number_to_human(op.duration, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                    <td>
+                      <% if op.query %>
+                        <%= link_to "View Details", query_path(op.query), class: "link" %>
+                      <% else %>
+                        <span class="text-subtle">-</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <%= render 'rails_pulse/components/empty_state',
+          title: 'No operations recorded',
+          description: 'No database queries or other operations were tracked during this job execution.' %>
+    <% end %>
+  <% end %>
+</div>

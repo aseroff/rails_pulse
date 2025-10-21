@@ -114,7 +114,6 @@ RailsPulse::Schema = lambda do |connection|
   connection.add_index :rails_pulse_operations, [ :query_id, :occurred_at ], name: "index_rails_pulse_operations_on_query_and_time"
   connection.add_index :rails_pulse_operations, [ :query_id, :duration, :occurred_at ], name: "index_rails_pulse_operations_query_performance"
   connection.add_index :rails_pulse_operations, [ :occurred_at, :duration, :operation_type ], name: "index_rails_pulse_operations_on_time_duration_type"
-  connection.add_index :rails_pulse_operations, :job_run_id, name: "index_rails_pulse_operations_on_job_run_id"
 
   if adapter.include?("postgres") || adapter.include?("mysql")
     connection.add_check_constraint :rails_pulse_operations,

@@ -1,0 +1,123 @@
+<div class="container-md p-5">
+  <div class="mb-5">
+    <nav class="breadcrumb mb-2">
+      <%= link_to "Jobs", jobs_path, class: "breadcrumb__item" %>
+      <span class="breadcrumb__separator">/</span>
+      <span class="breadcrumb__item breadcrumb__item--current"><%= @job.name %></span>
+    </nav>
+    <h1 class="font-semibold text-lg"><%= @job.name %></h1>
+  </div>
+
+  <div class="row mb-5">
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Total Runs</div>
+        <div class="metric-card__value"><%= number_with_delimiter(@job.runs_count) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Failures</div>
+        <div class="metric-card__value metric-card__value--negative"><%= number_with_delimiter(@job.failures_count) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Failure Rate</div>
+        <div class="metric-card__value <%= 'metric-card__value--negative' if @failure_rate > 0 %>">
+          <%= number_to_percentage(@failure_rate, precision: 1) %>
+        </div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Avg Duration</div>
+        <div class="metric-card__value"><%= number_to_human(@avg_duration, units: { unit: "ms", thousand: "s" }, precision: 2) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Queue</div>
+        <div class="metric-card__value text-sm"><%= @job.queue_name || 'default' %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Performance</div>
+        <div class="metric-card__value">
+          <span class="badge badge--<%= @job.performance_status %>">
+            <%= @job.performance_status.to_s.humanize %>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%= render 'rails_pulse/components/panel', { title: 'Recent Job Runs' } do %>
+    <%= search_form_for @q, url: job_path(@job), class: "flex items-center justify-between gap mb-4" do |form| %>
+      <div class="flex items-center grow gap">
+        <%= form.select :status_eq,
+          options_for_select(
+            [["All Statuses", ""]] + RailsPulse::JobRun::STATUSES.map { |s| [s.humanize, s] },
+            params.dig(:q, :status_eq)
+          ),
+          {},
+          { class: "input" }
+        %>
+        <%= link_to "Reset", job_path(@job), class: "btn btn--borderless show@md" if params.has_key?(:q) %>
+        <%= form.submit "Filter", class: "btn show@sm" %>
+      </div>
+    <% end %>
+
+    <% if @recent_runs.any? %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Run ID</th>
+              <th>Status</th>
+              <th>Occurred At</th>
+              <th class="text-end">Duration</th>
+              <th class="text-end">Attempts</th>
+              <th>Error</th>
+              <th>Adapter</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @recent_runs.each do |run| %>
+              <tr>
+                <td class="font-mono text-sm">
+                  <%= link_to run.run_id.to_s.truncate(12), job_run_path(@job, run), class: "link" %>
+                </td>
+                <td>
+                  <span class="badge badge--<%= run.status %>">
+                    <%= run.status.humanize %>
+                  </span>
+                </td>
+                <td><%= run.occurred_at.strftime("%b %d, %Y %l:%M %p") %></td>
+                <td class="text-end"><%= number_to_human(run.duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                <td class="text-end"><%= run.attempts %></td>
+                <td class="text-sm <%= 'text-negative' if run.error_class %>">
+                  <% if run.error_class %>
+                    <span class="font-mono"><%= run.error_class %></span>
+                  <% else %>
+                    <span class="text-subtle">-</span>
+                  <% end %>
+                </td>
+                <td class="text-subtle text-sm"><%= run.adapter || 'active_job' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4">
+        <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+      </div>
+    <% else %>
+      <%= render 'rails_pulse/components/empty_state',
+          title: 'No runs found',
+          description: 'This job has not been executed yet or no runs match the selected filters.' %>
+    <% end %>
+  <% end %>
+</div>

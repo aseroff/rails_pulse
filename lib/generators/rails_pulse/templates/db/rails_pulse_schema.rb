@@ -3,8 +3,9 @@
 # Load with: rails db:schema:load:rails_pulse or db:prepare
 
 RailsPulse::Schema = lambda do |connection|
+  adapter = connection.adapter_name.downcase
   # Skip if all tables already exist to prevent conflicts
-  required_tables = [ :rails_pulse_routes, :rails_pulse_queries, :rails_pulse_requests, :rails_pulse_operations, :rails_pulse_summaries ]
+  required_tables = [ :rails_pulse_routes, :rails_pulse_queries, :rails_pulse_requests, :rails_pulse_operations, :rails_pulse_jobs, :rails_pulse_job_runs, :rails_pulse_summaries ]
 
   if ENV["CI"] == "true"
     existing_tables = required_tables.select { |table| connection.table_exists?(table) }
@@ -57,8 +58,47 @@ RailsPulse::Schema = lambda do |connection|
   connection.add_index :rails_pulse_requests, :request_uuid, unique: true, name: "index_rails_pulse_requests_on_request_uuid"
   connection.add_index :rails_pulse_requests, [ :route_id, :occurred_at ], name: "index_rails_pulse_requests_on_route_id_and_occurred_at"
 
+  connection.create_table :rails_pulse_jobs do |t|
+    t.string :name, null: false, comment: "Job class name"
+    t.string :queue_name, comment: "Default queue"
+    t.text :description, comment: "Optional description"
+    t.integer :runs_count, null: false, default: 0, comment: "Cache of total runs"
+    t.integer :failures_count, null: false, default: 0, comment: "Cache of failed runs"
+    t.integer :retries_count, null: false, default: 0, comment: "Cache of retried runs"
+    t.decimal :avg_duration, precision: 15, scale: 6, comment: "Average duration in milliseconds"
+    t.text :tags, comment: "JSON array of tags"
+    t.timestamps
+  end
+
+  connection.add_index :rails_pulse_jobs, :name, unique: true, name: "index_rails_pulse_jobs_on_name"
+  connection.add_index :rails_pulse_jobs, :queue_name, name: "index_rails_pulse_jobs_on_queue"
+  connection.add_index :rails_pulse_jobs, :runs_count, name: "index_rails_pulse_jobs_on_runs_count"
+
+  connection.create_table :rails_pulse_job_runs do |t|
+    t.references :job, null: false, foreign_key: { to_table: :rails_pulse_jobs }, comment: "Link to job definition"
+    t.string :run_id, null: false, comment: "Adapter specific run id"
+    t.decimal :duration, precision: 15, scale: 6, comment: "Execution duration in milliseconds"
+    t.string :status, null: false, comment: "Execution status"
+    t.string :error_class, comment: "Error class name"
+    t.text :error_message, comment: "Error message"
+    t.integer :attempts, null: false, default: 0, comment: "Retry attempts"
+    t.timestamp :occurred_at, null: false, comment: "When the job started"
+    t.timestamp :enqueued_at, comment: "When the job was enqueued"
+    t.text :arguments, comment: "Serialized arguments"
+    t.string :adapter, comment: "Queue adapter"
+    t.text :tags, comment: "Execution tags"
+    t.timestamps
+  end
+
+  connection.add_index :rails_pulse_job_runs, :run_id, unique: true, name: "index_rails_pulse_job_runs_on_run_id"
+  connection.add_index :rails_pulse_job_runs, [ :job_id, :occurred_at ], name: "index_rails_pulse_job_runs_on_job_and_occurred"
+  connection.add_index :rails_pulse_job_runs, :occurred_at, name: "index_rails_pulse_job_runs_on_occurred_at"
+  connection.add_index :rails_pulse_job_runs, :status, name: "index_rails_pulse_job_runs_on_status"
+  connection.add_index :rails_pulse_job_runs, [ :job_id, :status ], name: "index_rails_pulse_job_runs_on_job_and_status"
+
   connection.create_table :rails_pulse_operations do |t|
-    t.references :request, null: false, foreign_key: { to_table: :rails_pulse_requests }, comment: "Link to the request"
+    t.references :request, null: true, foreign_key: { to_table: :rails_pulse_requests }, comment: "Link to the request"
+    t.references :job_run, null: true, foreign_key: { to_table: :rails_pulse_job_runs }, comment: "Link to a background job execution"
     t.references :query, foreign_key: { to_table: :rails_pulse_queries }, index: true, comment: "Link to the normalized SQL query"
     t.string :operation_type, null: false, comment: "Type of operation (e.g., database, view, gem_call)"
     t.string :label, null: false, comment: "Descriptive name (e.g., SELECT FROM users WHERE id = 1, render layout)"
@@ -74,6 +114,12 @@ RailsPulse::Schema = lambda do |connection|
   connection.add_index :rails_pulse_operations, [ :query_id, :occurred_at ], name: "index_rails_pulse_operations_on_query_and_time"
   connection.add_index :rails_pulse_operations, [ :query_id, :duration, :occurred_at ], name: "index_rails_pulse_operations_query_performance"
   connection.add_index :rails_pulse_operations, [ :occurred_at, :duration, :operation_type ], name: "index_rails_pulse_operations_on_time_duration_type"
+
+  if adapter.include?("postgres") || adapter.include?("mysql")
+    connection.add_check_constraint :rails_pulse_operations,
+      "(request_id IS NOT NULL OR job_run_id IS NOT NULL)",
+      name: "rails_pulse_operations_request_or_job_run"
+  end
 
   connection.create_table :rails_pulse_summaries do |t|
     # Time fields

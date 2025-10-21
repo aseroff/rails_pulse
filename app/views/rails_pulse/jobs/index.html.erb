@@ -1,0 +1,86 @@
+<div class="container-md p-5">
+  <h1 class="font-semibold text-lg mb-4">Background Jobs</h1>
+
+  <div class="row mb-5">
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Job Classes</div>
+        <div class="metric-card__value"><%= @total_jobs %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Total Runs</div>
+        <div class="metric-card__value"><%= number_with_delimiter(@total_runs) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Failed Runs</div>
+        <div class="metric-card__value metric-card__value--negative"><%= number_with_delimiter(@failed_runs) %></div>
+      </div>
+    </div>
+    <div class="grid-item block">
+      <div class="metric-card">
+        <div class="metric-card__label">Avg Duration</div>
+        <div class="metric-card__value"><%= number_to_human(@avg_duration, units: { unit: "ms", thousand: "s", million: "ks" }, precision: 2) %></div>
+      </div>
+    </div>
+  </div>
+
+  <%= render 'rails_pulse/components/panel', { title: 'Job Classes' } do %>
+    <%= search_form_for @q, url: jobs_path, class: "flex items-center justify-between gap mb-4" do |form| %>
+      <div class="flex items-center grow gap">
+        <%= form.search_field :name_cont, placeholder: "Filter by job name", autocomplete: "off", class: "input" %>
+        <%= form.search_field :queue_name_cont, placeholder: "Filter by queue", autocomplete: "off", class: "input" %>
+        <%= link_to "Reset", jobs_path, class: "btn btn--borderless show@md" if params.has_key?(:q) %>
+        <%= form.submit "Search", class: "btn show@sm" %>
+      </div>
+    <% end %>
+
+    <% if @jobs.any? %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job Class</th>
+              <th>Queue</th>
+              <th class="text-end">Total Runs</th>
+              <th class="text-end">Failures</th>
+              <th class="text-end">Retries</th>
+              <th class="text-end">Failure Rate</th>
+              <th class="text-end">Avg Duration</th>
+              <th>Performance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @jobs.each do |job| %>
+              <tr>
+                <td class="font-medium"><%= link_to job.name, job_path(job), class: "link" %></td>
+                <td class="text-subtle"><%= job.queue_name || 'default' %></td>
+                <td class="text-end font-semibold"><%= number_with_delimiter(job.runs_count) %></td>
+                <td class="text-end <%= 'text-negative' if job.failures_count > 0 %>"><%= number_with_delimiter(job.failures_count) %></td>
+                <td class="text-end"><%= number_with_delimiter(job.retries_count) %></td>
+                <td class="text-end <%= 'text-negative' if job.failure_rate > 0 %>"><%= number_to_percentage(job.failure_rate, precision: 1) %></td>
+                <td class="text-end"><%= number_to_human(job.avg_duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                <td>
+                  <span class="badge badge--<%= job.performance_status %>">
+                    <%= job.performance_status.to_s.humanize %>
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4">
+        <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+      </div>
+    <% else %>
+      <%= render 'rails_pulse/components/empty_state',
+          title: 'No jobs found',
+          description: 'No background jobs have been executed yet.' %>
+    <% end %>
+  <% end %>
+</div>

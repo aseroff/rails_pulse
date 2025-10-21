@@ -12,6 +12,14 @@ module RailsPulse
 
     validates :name, presence: true, uniqueness: true
 
+    def self.ransackable_attributes(auth_object = nil)
+      %w[id name queue_name runs_count failures_count avg_duration]
+    end
+
+    def self.ransackable_associations(auth_object = nil)
+      %w[runs]
+    end
+
     scope :by_queue, ->(queue) { where(queue_name: queue) }
     scope :with_failures, -> { where("failures_count > 0") }
     scope :ordered_by_runs, -> { order(runs_count: :desc) }
