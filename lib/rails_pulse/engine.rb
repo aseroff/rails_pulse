@@ -62,6 +62,24 @@ module RailsPulse
       end
     end
 
+    initializer "rails_pulse.configure_sidekiq", after: "rails_pulse.active_job" do
+      if defined?(Sidekiq) && RailsPulse.configuration.job_adapters.dig(:sidekiq, :enabled)
+        require "rails_pulse/adapters/sidekiq_middleware"
+        Sidekiq.configure_server do |config|
+          config.server_middleware do |chain|
+            chain.add RailsPulse::Adapters::SidekiqMiddleware
+          end
+        end
+      end
+    end
+
+    initializer "rails_pulse.configure_delayed_job", after: "rails_pulse.active_job" do
+      if defined?(Delayed::Job) && RailsPulse.configuration.job_adapters.dig(:delayed_job, :enabled)
+        require "rails_pulse/adapters/delayed_job_plugin"
+        Delayed::Worker.plugins << RailsPulse::Adapters::DelayedJobPlugin
+      end
+    end
+
     initializer "rails_pulse.database_configuration", before: "active_record.initialize_timezone" do
       # Ensure database configuration is applied early in the initialization process
       # This allows models to properly connect to configured databases
