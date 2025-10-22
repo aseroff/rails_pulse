@@ -17,7 +17,11 @@ module RailsPulse
       setup_metric_cards
 
       @ransack_query = Job.ransack(params[:q])
-      @pagy, @jobs = pagy(@ransack_query.result.order(runs_count: :desc),
+
+      # Apply tag filters from session
+      base_query = apply_tag_filters(@ransack_query.result)
+
+      @pagy, @jobs = pagy(base_query.order(runs_count: :desc),
                           limit: session_pagination_limit,
                           overflow: :last_page)
       @table_data = @jobs

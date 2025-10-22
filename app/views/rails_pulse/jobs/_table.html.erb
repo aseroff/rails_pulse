@@ -4,7 +4,8 @@
   { field: :runs_count, label: 'Total Runs', class: 'w-28' },
   { field: :failures_count, label: 'Failures', class: 'w-24' },
   { field: :retries_count, label: 'Retries', class: 'w-24' },
-  { field: :avg_duration, label: 'Avg Duration', class: 'w-32' }
+  { field: :avg_duration, label: 'Avg Duration', class: 'w-32' },
+  { field: nil, label: 'Tags', class: 'w-32', sortable: false }
 ] %>
 
 <table class="table mbs-4" data-controller="rails-pulse--table-sort">
@@ -30,6 +31,9 @@
         </td>
         <td>
           <%= number_to_human(job.avg_duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %>
+        </td>
+        <td>
+          <%= display_tag_badges(job) %>
         </td>
       </tr>
     <% end %>
