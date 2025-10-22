@@ -1,3 +1,31 @@
+# Display database connection info
+db_config = ActiveRecord::Base.connection_db_config
+puts "=" * 80
+puts "Adapter: #{db_config.adapter}"
+puts "Database: #{db_config.database}"
+puts "Host: #{db_config.host}" if db_config.host
+puts "=" * 80
+puts ""
+
+# Helper methods for job summaries
+def job_seed_percentile(values, fraction)
+  return nil if values.empty?
+
+  index = (fraction * (values.length - 1)).floor
+  fraction_part = (fraction * (values.length - 1)) - index
+
+  return values[index] if fraction_part.zero? || index + 1 >= values.length
+
+  values[index] + (values[index + 1] - values[index]) * fraction_part
+end
+
+def job_seed_stddev(values, mean)
+  return nil if values.length < 2 || mean.nil?
+
+  sum_of_squares = values.sum { |value| (value - mean) ** 2 }
+  Math.sqrt(sum_of_squares / (values.length - 1))
+end
+
 # Clear existing data
 Comment.destroy_all
 Post.destroy_all
@@ -705,6 +733,52 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
   puts "- #{job_runs_count} job runs"
   puts "- #{RailsPulse::Operation.where.not(job_run_id: nil).count} job operations"
 
+  puts "\nAggregating job summaries..."
+  RailsPulse::Summary.where(summarizable_type: "RailsPulse::Job").delete_all
+
+  summary_periods = %w[hour day week]
+  summary_count = 0
+
+  RailsPulse::Job.find_each do |job|
+    runs = job.runs.where(status: RailsPulse::JobRun::FINAL_STATUSES).to_a
+    next if runs.empty?
+
+    summary_periods.each do |period_type|
+      runs.group_by { |run| RailsPulse::Summary.normalize_period_start(period_type, run.occurred_at) }.each do |period_start, grouped_runs|
+        durations = grouped_runs.map(&:duration).compact.map(&:to_f).sort
+        next if durations.empty?
+
+        average_duration = durations.sum / durations.size
+
+        summary = RailsPulse::Summary.find_or_initialize_by(
+          summarizable: job,
+          period_type: period_type,
+          period_start: period_start
+        )
+
+        summary.assign_attributes(
+          period_end: RailsPulse::Summary.calculate_period_end(period_type, period_start),
+          count: grouped_runs.size,
+          avg_duration: average_duration,
+          min_duration: durations.first,
+          max_duration: durations.last,
+          total_duration: durations.sum,
+          p50_duration: job_seed_percentile(durations, 0.5),
+          p95_duration: job_seed_percentile(durations, 0.95),
+          p99_duration: job_seed_percentile(durations, 0.99),
+          stddev_duration: job_seed_stddev(durations, average_duration),
+          error_count: grouped_runs.count { |run| run.failure_like_status? },
+          success_count: grouped_runs.count { |run| run.status == "success" }
+        )
+
+        summary.save!
+        summary_count += 1
+      end
+    end
+  end
+
+  puts "- #{summary_count} job summaries"
+
   # Add some additional user/post data for more realistic scenarios
   first_names = %w[Isabella Jack Kate Liam Maya Noah Olivia Parker Quinn Ruby Sam Tara Ulysses Victoria William Xavier Yara Zoe Alexander Benjamin Charlotte Daniel Elizabeth Felix Gabriel Hannah Isaac Julia Kevin Luna Marcus Natalie Oscar Penelope]
   last_names = %w[Anderson Thomas Jackson White Harris Martin Thompson Garcia Martinez Robinson Clark Rodriguez Lewis Lee Walker Hall Allen Young Hernandez King Wright Lopez Hill Green Adams Baker Gonzalez Nelson Carter Mitchell]
@@ -891,7 +965,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     is_complex && !query.operations.exists?
   end
 
-  puts "  Found #{complex_queries_without_ops.count} complex queries without operations"
+  puts "Found #{complex_queries_without_ops.count} complex queries without operations"
 
   # Create operations for these complex queries
   analytics_route = created_routes.find { |r| r.path.include?("complex") } || created_routes.first
@@ -928,12 +1002,12 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     print "."
   end
 
-  puts "\n  Created operations for #{complex_queries_without_ops.count} complex queries"
+  puts "\nCreated operations for #{complex_queries_without_ops.count} complex queries"
 
   # Select queries that now have operations for analysis
   complex_queries_for_analysis = RailsPulse::Query.joins(:operations).distinct.limit(20)
 
-  puts "Analyzing #{complex_queries_for_analysis.count} complex queries..."
+  puts "\nAnalyzing #{complex_queries_for_analysis.count} complex queries..."
 
   analyzed_successfully = 0
 
@@ -941,7 +1015,6 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     begin
       # Only analyze queries that have operations (remove time restriction for seed data)
       if query.operations.exists?
-        puts "  Analyzing query #{query.id}: #{query.normalized_sql[0..80]}..."
         RailsPulse::QueryAnalysisService.analyze_query(query.id)
         analyzed_successfully += 1
         print "."
@@ -954,33 +1027,11 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     end
   end
 
-  puts "\n  Successfully analyzed: #{analyzed_successfully}"
-
   analyzed_count = RailsPulse::Query.where.not(analyzed_at: nil).count
   puts "\n\nQuery analysis completed!"
   puts "Analyzed queries: #{analyzed_count}"
   puts "Total issues detected: #{RailsPulse::Query.where.not(issues: [ nil, "[]" ]).count}"
   puts "Queries with suggestions: #{RailsPulse::Query.where.not(suggestions: [ nil, "[]" ]).count}"
-
-  # Display some example analysis results
-  if analyzed_count > 0
-    puts "\nExample analysis results:"
-    RailsPulse::Query.where.not(analyzed_at: nil).limit(3).each do |analyzed_query|
-      puts "\nQuery: #{analyzed_query.normalized_sql[0..100]}..."
-      if analyzed_query.issues.any?
-        puts "  Issues (#{analyzed_query.issues.count}):"
-        analyzed_query.issues.first(2).each do |issue|
-          puts "    - #{issue['severity'].upcase}: #{issue['description']}"
-        end
-      end
-      if analyzed_query.suggestions.any?
-        puts "  Suggestions (#{analyzed_query.suggestions.count}):"
-        analyzed_query.suggestions.first(2).each do |suggestion|
-          puts "    - #{suggestion['type'].upcase}: #{suggestion['action']}"
-        end
-      end
-    end
-  end
 
   # Generate summaries for the complex queries we just created operations for
   puts "\nGenerating summaries for newly created complex query operations..."

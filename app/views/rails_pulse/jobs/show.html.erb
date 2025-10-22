@@ -53,6 +53,39 @@
     </div>
   </div>
 
+  <% if @job_summaries.any? %>
+    <%= render 'rails_pulse/components/panel', { title: 'Daily Summary (last 30 days)' } do %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="text-end">Runs</th>
+              <th class="text-end">Failures</th>
+              <th class="text-end">Avg Duration</th>
+              <th class="text-end">P95</th>
+              <th class="text-end">Max</th>
+              <th class="text-end">Successes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @job_summaries.each do |summary| %>
+              <tr>
+                <td><%= summary.period_start.strftime('%b %d, %Y') %></td>
+                <td class="text-end font-semibold"><%= number_with_delimiter(summary.count || 0) %></td>
+                <td class="text-end <%= 'text-negative' if summary.error_count.to_i.positive? %>"><%= number_with_delimiter(summary.error_count || 0) %></td>
+                <td class="text-end"><%= number_to_human(summary.avg_duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                <td class="text-end"><%= number_to_human(summary.p95_duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                <td class="text-end"><%= number_to_human(summary.max_duration || 0, units: { unit: "ms", thousand: "s" }, precision: 2) %></td>
+                <td class="text-end"><%= number_with_delimiter(summary.success_count || 0) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  <% end %>
+
   <%= render 'rails_pulse/components/panel', { title: 'Recent Job Runs' } do %>
     <%= search_form_for @q, url: job_path(@job), class: "flex items-center justify-between gap mb-4" do |form| %>
       <div class="flex items-center grow gap">

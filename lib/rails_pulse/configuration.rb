@@ -41,13 +41,15 @@ module RailsPulse
       @track_jobs = true
       @custom_asset_patterns = []
       @mount_path = nil
-      @full_retention_period = 2.weeks
+      @full_retention_period = 30.days
       @archiving_enabled = true
       @max_table_records = {
-        rails_pulse_requests: 10000,
-        rails_pulse_operations: 50000,
-        rails_pulse_routes: 1000,
-        rails_pulse_queries: 500
+        rails_pulse_operations: 100_000,
+        rails_pulse_requests: 50_000,
+        rails_pulse_job_runs: 50_000,
+        rails_pulse_queries: 10_000,
+        rails_pulse_routes: 1_000,
+        rails_pulse_jobs: 1_000
       }
       @connects_to = nil
       @authentication_enabled = Rails.env.production?
