@@ -118,12 +118,7 @@ module RailsPulse
     def setup_table_data(ransack_params)
       table_ransack_params = build_table_ransack_params(ransack_params)
       @ransack_query = table_model.ransack(table_ransack_params)
-
-      # Only apply default sort if not using Requests::Tables::Index (which handles its own sorting)
-      # For requests, we always use the Tables::Index on the index action
-      unless action_name == "index"
-        @ransack_query.sorts = default_table_sort if @ransack_query.sorts.empty?
-      end
+      @ransack_query.sorts = default_table_sort if @ransack_query.sorts.empty?
 
       table_results = build_table_results
       handle_pagination

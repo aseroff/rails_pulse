@@ -2,6 +2,10 @@ module RailsPulse
   module Jobs
     module Cards
       class AverageDuration < Base
+        def initialize(job: nil)
+          @job = job
+        end
+
         def to_metric_card
           base_query = RailsPulse::Summary
             .where(
@@ -9,6 +13,7 @@ module RailsPulse
               period_type: "day",
               period_start: range_start..now
             )
+          base_query = base_query.where(summarizable_id: @job.id) if @job
 
           metrics = base_query.select(
             "SUM(avg_duration * count) AS total_weighted_duration",

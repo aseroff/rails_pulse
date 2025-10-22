@@ -2,6 +2,14 @@ module RailsPulse
   class JobsController < ApplicationController
     include TagFilterConcern
     include Pagy::Backend
+    include TimeRangeConcern
+
+    # Override TIME_RANGE_OPTIONS from TimeRangeConcern
+    remove_const(:TIME_RANGE_OPTIONS) if const_defined?(:TIME_RANGE_OPTIONS)
+    TIME_RANGE_OPTIONS = [
+      [ "Recent", "recent" ],
+      [ "Custom Range", "custom" ]
+    ].freeze
 
     before_action :set_job, only: :show
 
@@ -9,14 +17,43 @@ module RailsPulse
       setup_metric_cards
 
       @ransack_query = Job.ransack(params[:q])
-      @pagy, @jobs = pagy(@ransack_query.result.order(runs_count: :desc), limit: session_pagination_limit)
+      @pagy, @jobs = pagy(@ransack_query.result.order(runs_count: :desc),
+                          limit: session_pagination_limit,
+                          overflow: :last_page)
       @table_data = @jobs
       @available_queues = Job.distinct.pluck(:queue_name).compact.sort
     end
 
     def show
-      @q = @job.runs.ransack(params[:q])
-      @pagy, @recent_runs = pagy(@q.result.order(occurred_at: :desc), limit: session_pagination_limit)
+      setup_metric_cards
+
+      ransack_params = params[:q] || {}
+
+      # Check if user explicitly selected a time range
+      time_mode = params.dig(:q, :period_start_range) || "recent"
+
+      # Apply time range filter only if custom mode is selected
+      if time_mode == "custom"
+        # Get time range from TimeRangeConcern which parses custom_date_range
+        @start_time, @end_time, @selected_time_range, @time_diff_hours = setup_time_range
+
+        # Apply time filters using parsed times from concern
+        ransack_params = ransack_params.merge(
+          occurred_at_gteq: Time.at(@start_time),
+          occurred_at_lteq: Time.at(@end_time)
+        )
+      else
+        # Recent mode - no time filters, just rely on sort + pagination
+        @selected_time_range = "recent"
+      end
+
+      @ransack_query = @job.runs.ransack(ransack_params)
+      @ransack_query.sorts = "occurred_at desc" if @ransack_query.sorts.empty?
+
+      @pagy, @recent_runs = pagy(@ransack_query.result,
+                                  limit: session_pagination_limit,
+                                  overflow: :last_page)
+      @table_data = @recent_runs
 
       set_show_metrics
     end
@@ -30,10 +67,11 @@ module RailsPulse
     def setup_metric_cards
       return if turbo_frame_request?
 
-      @total_jobs_metric_card = RailsPulse::Jobs::Cards::TotalJobs.new.to_metric_card
-      @total_runs_metric_card = RailsPulse::Jobs::Cards::TotalRuns.new.to_metric_card
-      @failure_rate_metric_card = RailsPulse::Jobs::Cards::FailureRate.new.to_metric_card
-      @average_duration_metric_card = RailsPulse::Jobs::Cards::AverageDuration.new.to_metric_card
+      # Pass the job to scope the cards to the current job on the show page
+      @total_jobs_metric_card = RailsPulse::Jobs::Cards::TotalJobs.new(job: @job).to_metric_card
+      @total_runs_metric_card = RailsPulse::Jobs::Cards::TotalRuns.new(job: @job).to_metric_card
+      @failure_rate_metric_card = RailsPulse::Jobs::Cards::FailureRate.new(job: @job).to_metric_card
+      @average_duration_metric_card = RailsPulse::Jobs::Cards::AverageDuration.new(job: @job).to_metric_card
     end
 
     def set_show_metrics
