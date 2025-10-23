@@ -2,7 +2,8 @@
   { field: :occurred_at, label: 'Occurred At' },
   { field: :status, label: 'Status', class: 'w-28' },
   { field: :duration, label: 'Duration', class: 'w-28' },
-  { field: :attempts, label: 'Attempts', class: 'w-24' }
+  { field: :attempts, label: 'Attempts', class: 'w-24' },
+  { field: nil, label: 'Tags', class: 'w-32', sortable: false }
 ] %>
 
 <table class="table mbs-4" data-controller="rails-pulse--table-sort">
@@ -22,6 +23,9 @@
         </td>
         <td>
           <%= run.attempts %>
+        </td>
+        <td>
+          <%= display_tag_badges(run) %>
         </td>
       </tr>
     <% end %>

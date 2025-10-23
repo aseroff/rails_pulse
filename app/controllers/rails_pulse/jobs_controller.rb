@@ -54,7 +54,10 @@ module RailsPulse
       @ransack_query = @job.runs.ransack(ransack_params)
       @ransack_query.sorts = "occurred_at desc" if @ransack_query.sorts.empty?
 
-      @pagy, @recent_runs = pagy(@ransack_query.result,
+      # Apply tag filters from session
+      base_query = apply_tag_filters(@ransack_query.result)
+
+      @pagy, @recent_runs = pagy(base_query,
                                   limit: session_pagination_limit,
                                   overflow: :last_page)
       @table_data = @recent_runs

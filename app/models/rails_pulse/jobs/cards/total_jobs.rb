@@ -9,17 +9,39 @@ module RailsPulse
         def to_metric_card
           # When scoped to a job, show runs count instead of job count
           if @job
-            total_runs = @job.runs_count
+            base_query = RailsPulse::Summary
+              .where(
+                summarizable_type: "RailsPulse::Job",
+                summarizable_id: @job.id,
+                period_type: "day",
+                period_start: range_start..now
+              )
+
+            metrics = base_query.select(
+              "SUM(count) AS total_count",
+              "SUM(CASE WHEN period_start >= #{quote(current_window_start)} THEN count ELSE 0 END) AS current_count",
+              "SUM(CASE WHEN period_start >= #{quote(range_start)} AND period_start < #{quote(current_window_start)} THEN count ELSE 0 END) AS previous_count"
+            ).take
+
+            total_runs = metrics&.total_count.to_i
+            current_runs = metrics&.current_count.to_i
+            previous_runs = metrics&.previous_count.to_i
+
+            trend_icon, trend_amount = trend_for(current_runs, previous_runs)
+
+            grouped_runs = base_query
+              .group_by_day(:period_start, time_zone: "UTC")
+              .sum(:count)
 
             {
               id: "jobs_total_jobs",
               context: "jobs",
               title: "Total Runs",
               summary: "#{format_number(total_runs)} runs",
-              chart_data: {},
-              trend_icon: "move-right",
-              trend_amount: "0%",
-              trend_text: ""
+              chart_data: sparkline_from(grouped_runs),
+              trend_icon: trend_icon,
+              trend_amount: trend_amount,
+              trend_text: "Compared to previous week"
             }
           else
             total_jobs = RailsPulse::Job.count

@@ -45,6 +45,8 @@ module RailsPulse
         Query.find(@taggable_id)
       when "job"
         Job.find(@taggable_id)
+      when "job_run"
+        JobRun.find(@taggable_id)
       else
         head :not_found
       end
