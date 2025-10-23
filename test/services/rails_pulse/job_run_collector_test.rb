@@ -14,7 +14,7 @@ module RailsPulse
       end
 
       def self.name
-        "RailsPulse::JobRunCollectorTest::FakeJob"
+        "JobRunCollectorFakeJob"
       end
 
       def arguments
@@ -82,7 +82,7 @@ module RailsPulse
     end
 
     test "active job integration wraps perform now" do
-      class InstrumentedJob < ActiveJob::Base
+      klass = Class.new(ActiveJob::Base) do
         queue_as :default
 
         def perform
@@ -92,13 +92,19 @@ module RailsPulse
         end
       end
 
-      assert_difference -> { RailsPulse::Job.where(name: "RailsPulse::JobRunCollectorTest::InstrumentedJob").count }, 1 do
+      if Object.const_defined?(:JobRunCollectorTestInstrumentedJob)
+        Object.send(:remove_const, :JobRunCollectorTestInstrumentedJob)
+      end
+
+      Object.const_set(:JobRunCollectorTestInstrumentedJob, klass)
+
+      assert_difference -> { RailsPulse::Job.where(name: JobRunCollectorTestInstrumentedJob.name).count }, 1 do
         assert_difference -> { RailsPulse::JobRun.count }, 1 do
-          InstrumentedJob.perform_now
+          JobRunCollectorTestInstrumentedJob.perform_now
         end
       end
 
-      job = RailsPulse::Job.find_by(name: "RailsPulse::JobRunCollectorTest::InstrumentedJob")
+      job = RailsPulse::Job.find_by(name: JobRunCollectorTestInstrumentedJob.name)
 
       assert_not_nil job
       run = job.runs.order(:created_at).last
@@ -106,7 +112,9 @@ module RailsPulse
       assert_equal "success", run.status
       assert_not_empty RailsPulse::Operation.where(job_run: run)
     ensure
-      Object.send(:remove_const, :InstrumentedJob) if defined?(InstrumentedJob)
+      if Object.const_defined?(:JobRunCollectorTestInstrumentedJob)
+        Object.send(:remove_const, :JobRunCollectorTestInstrumentedJob)
+      end
     end
   end
 end

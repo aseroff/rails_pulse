@@ -24,9 +24,9 @@ module RailsPulse
       job = Job.create!(name: "RailsPulse::TestJob", queue_name: "default")
       run = job.runs.create!(run_id: "test-run-1", status: "running", occurred_at: Time.current, attempts: 0)
 
-      run.update!(status: "retried", duration: 200.0)
+      run.update_columns(status: "retried", duration: 200.0)
 
-      job.apply_run!(run)
+      job.apply_run!(run.reload)
       job.reload
 
       assert_in_delta 200.0, job.avg_duration, 0.01
