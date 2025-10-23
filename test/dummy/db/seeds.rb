@@ -550,7 +550,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     job = created_jobs[index]
 
     total_days.times do |day_offset|
-      day_start = (total_days - day_offset).days.ago.beginning_of_day
+      day_start = (total_days + 7 - day_offset).days.ago.beginning_of_day
       # Reduce runs per day to 20% of original for faster seeding
       runs_for_day = (job_def[:runs_per_day] * 0.2).to_i
 
@@ -777,7 +777,64 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
     end
   end
 
-  puts "- #{summary_count} job summaries"
+  puts "- #{summary_count} job summaries from historical runs"
+
+  puts "\nCreating synthetic job summaries for the most recent week..."
+
+  job_definitions_by_name = job_definitions.index_by { |defn| defn[:name] }
+  synthetic_summary_count = 0
+
+  # Include current day plus the previous 7 full days to avoid gaps between
+  # historical run data (two weeks ago) and the synthetic summaries for last week.
+  recent_days = (0..7).map { |offset| offset.days.ago.beginning_of_day }
+
+  RailsPulse::Job.find_each do |job|
+    job_def = job_definitions_by_name[job.name]
+    next unless job_def
+
+    recent_days.each do |period_start|
+      summary = RailsPulse::Summary.find_or_initialize_by(
+        summarizable: job,
+        period_type: "day",
+        period_start: period_start
+      )
+
+      # Skip if historical data already generated this summary
+      next if summary.persisted?
+
+      # Build synthetic durations based on job definition to mimic recent activity
+      run_count = [ (job_def[:runs_per_day] * 0.15).round, 1 ].max
+      durations = Array.new(run_count) do
+        value = job_def[:base_duration] + rand(-job_def[:variance]..job_def[:variance])
+        [ value, 10 ].max.to_f
+      end.sort
+
+      average_duration = durations.sum / durations.size
+      error_estimate = [ (durations.size * job_def[:error_rate]).round, durations.size ].min
+      success_estimate = durations.size - error_estimate
+
+      summary.assign_attributes(
+        period_end: RailsPulse::Summary.calculate_period_end("day", period_start),
+        count: durations.size,
+        avg_duration: average_duration,
+        min_duration: durations.first,
+        max_duration: durations.last,
+        total_duration: durations.sum,
+        p50_duration: job_seed_percentile(durations, 0.5),
+        p95_duration: job_seed_percentile(durations, 0.95),
+        p99_duration: job_seed_percentile(durations, 0.99),
+        stddev_duration: job_seed_stddev(durations, average_duration),
+        error_count: error_estimate,
+        success_count: success_estimate
+      )
+
+      summary.save!
+      synthetic_summary_count += 1
+    end
+  end
+
+  puts "- #{synthetic_summary_count} synthetic job summaries for last week"
+  puts "- #{summary_count + synthetic_summary_count} job summaries total"
 
   # Add some additional user/post data for more realistic scenarios
   first_names = %w[Isabella Jack Kate Liam Maya Noah Olivia Parker Quinn Ruby Sam Tara Ulysses Victoria William Xavier Yara Zoe Alexander Benjamin Charlotte Daniel Elizabeth Felix Gabriel Hannah Isaac Julia Kevin Luna Marcus Natalie Oscar Penelope]
