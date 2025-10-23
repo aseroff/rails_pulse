@@ -61,7 +61,7 @@ module RailsPulse
 
       return content_tag(:span, "-", class: "text-subtle") if tag_array.empty?
 
-      safe_join(tag_array.map { |tag| content_tag(:div, tag, class: "badge") }, " ")
+      safe_join(tag_array.map { |tag| content_tag(:div, tag.humanize, class: "badge") }, " ")
     end
   end
 end

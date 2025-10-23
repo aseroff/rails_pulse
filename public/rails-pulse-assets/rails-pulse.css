@@ -2882,6 +2882,10 @@ body {
   flex-wrap: wrap;
 }
 
+.tag-list span {
+  padding-right: 3px !important;
+}
+
 /* Individual Tag */
 .tag {
   display: inline-flex;
@@ -2919,9 +2923,10 @@ body {
 }
 
 .tag-remove span {
-  font-size: 1.25rem;
   line-height: 1;
-  font-weight: bold;
+  font-weight: inherit;
+  margin-left: 6px;
+  font-size: 17px;
 }
 
 /* Add Tag Container */

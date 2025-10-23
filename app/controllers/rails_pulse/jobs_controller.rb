@@ -75,7 +75,6 @@ module RailsPulse
       return if turbo_frame_request?
 
       # Pass the job to scope the cards to the current job on the show page
-      @total_jobs_metric_card = RailsPulse::Jobs::Cards::TotalJobs.new(job: @job).to_metric_card
       @total_runs_metric_card = RailsPulse::Jobs::Cards::TotalRuns.new(job: @job).to_metric_card
       @failure_rate_metric_card = RailsPulse::Jobs::Cards::FailureRate.new(job: @job).to_metric_card
       @average_duration_metric_card = RailsPulse::Jobs::Cards::AverageDuration.new(job: @job).to_metric_card
