@@ -14,8 +14,8 @@ report_job:
   name: GenerateReportJob
   queue_name: default
   description: Generates analytics reports
-  runs_count: 2
-  failures_count: 1
+  runs_count: 4
+  failures_count: 2
   retries_count: 1
   avg_duration: 450.0
   tags: '["report"]'
