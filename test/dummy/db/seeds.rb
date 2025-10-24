@@ -556,19 +556,19 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
 
       # Add some variance to runs per day
       runs_for_day += rand(-2..2)
-      runs_for_day = [runs_for_day, 1].max
+      runs_for_day = [ runs_for_day, 1 ].max
 
       runs_for_day.times do
         occurred_at = day_start + rand(0..86400).seconds
 
         # Calculate duration with variance
         duration = job_def[:base_duration] + rand(-job_def[:variance]..job_def[:variance])
-        duration = [duration, 10].max
+        duration = [ duration, 10 ].max
 
         # Determine status
         rand_val = rand
         status = if rand_val < job_def[:error_rate]
-          ["failed", "discarded"].sample
+          [ "failed", "discarded" ].sample
         elsif rand_val < job_def[:error_rate] + 0.03
           "retried"
         else
@@ -593,7 +593,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
         error_class = nil
         error_message = nil
 
-        if ["failed", "discarded"].include?(status)
+        if [ "failed", "discarded" ].include?(status)
           error_classes = [
             "ActiveRecord::RecordInvalid",
             "Net::ReadTimeout",
@@ -630,7 +630,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
           occurred_at: occurred_at,
           enqueued_at: enqueued_at,
           attempts: attempts,
-          adapter: ["active_job", "sidekiq", "solid_queue"].sample,
+          adapter: [ "active_job", "sidekiq", "solid_queue" ].sample,
           error_class: error_class,
           error_message: error_message
         )
@@ -657,7 +657,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
 
         current_time = 0.0
         operation_count.times do
-          operation_type = ["sql", "template", "controller"].sample
+          operation_type = [ "sql", "template", "controller" ].sample
 
           operation_duration = case operation_type
           when "sql"
@@ -679,9 +679,9 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
           when "sql"
             query&.normalized_sql&.split(" ")&.first(5)&.join(" ") || "SQL Query"
           when "template"
-            ["layouts/application", "mailers/user_mailer", "jobs/export"].sample
+            [ "layouts/application", "mailers/user_mailer", "jobs/export" ].sample
           when "controller"
-            ["JobController#perform", "Processing job", "Job execution"].sample
+            [ "JobController#perform", "Processing job", "Job execution" ].sample
           end
 
           codebase_location = case job_def[:name]
@@ -724,7 +724,7 @@ if ENV["GENERATE_HISTORICAL_DATA"] == "true"
         end
       end
 
-      print "." if (day_offset % 5 == 0)
+      print "." if day_offset % 5 == 0
     end
   end
 

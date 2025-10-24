@@ -24,7 +24,7 @@ class JobsShowPageTest < ApplicationSystemTestCase
 
     latest_run = @job.runs.order(occurred_at: :desc).first
     # HTML collapses multiple spaces, so we normalize the timestamp
-    timestamp = latest_run.occurred_at.in_time_zone.strftime("%b %d, %Y %l:%M %p").gsub(/\s+/, ' ').strip
+    timestamp = latest_run.occurred_at.in_time_zone.strftime("%b %d, %Y %l:%M %p").gsub(/\s+/, " ").strip
 
     click_link timestamp
 
@@ -77,6 +77,7 @@ class JobsShowPageTest < ApplicationSystemTestCase
     end
 
     menu_id = "#tag_menu_job_#{@job.id}"
+
     assert_selector menu_id
 
     within(menu_id) do

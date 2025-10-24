@@ -50,7 +50,7 @@ module RailsPulse
             "trending-down"
           end
 
-          [icon, format_percentage(percentage.abs, precision)]
+          [ icon, format_percentage(percentage.abs, precision) ]
         end
 
         def format_percentage(value, precision)

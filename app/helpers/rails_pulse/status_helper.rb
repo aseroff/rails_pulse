@@ -295,7 +295,7 @@ module RailsPulse
         [ "#{name.to_s.humanize} (≥ #{value}ms)", value ]
       end.sort_by { |_, value| value }
 
-      [[ all_label, nil ]] + threshold_options
+      [ [ all_label, nil ] ] + threshold_options
     end
   end
 end

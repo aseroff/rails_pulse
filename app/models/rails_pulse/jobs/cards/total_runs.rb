@@ -42,7 +42,6 @@ module RailsPulse
             trend_text: "Compared to previous week"
           }
         end
-
       end
     end
   end

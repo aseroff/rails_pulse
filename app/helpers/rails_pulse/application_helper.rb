@@ -31,7 +31,7 @@ module RailsPulse
         "flex-shrink:0"
       ].join(";")
 
-      style_attribute = [default_style, custom_style].compact.join(";")
+      style_attribute = [ default_style, custom_style ].compact.join(";")
 
       # Additional HTML attributes
       attrs = options.except(:width, :height, :class, :style, "width", "height", "class", "style")
