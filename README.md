@@ -42,6 +42,8 @@
   - [Configuration](#configuration)
   - [Database Configuration](#database-configuration)
   - [Schema Loading](#schema-loading)
+- [Performance Impact](#performance-impact)
+  - [Running Performance Benchmarks](#running-performance-benchmarks)
 - [Testing](#testing)
 - [Technology Stack](#technology-stack)
 - [Advantages Over Other Solutions](#advantages-over-other-solutions)
@@ -633,6 +635,43 @@ The schema file `db/rails_pulse_schema.rb` serves as your single source of truth
 - Is loaded by the installation migration
 - Should not be deleted or modified
 - Future updates will provide migrations in `db/rails_pulse_migrate/`
+
+## Performance Impact
+
+Rails Pulse includes comprehensive performance monitoring with measurable overhead. Based on real benchmarking:
+
+- **Request overhead:** 5-6ms per request (includes database writes)
+- **Memory allocation:** ~830 KB per request (temporary, garbage collected)
+- **Job tracking overhead:** < 0.1ms per background job
+- **Relative impact:** 1-5% for typical requests (100-500ms)
+
+**Important:** The overhead is primarily from persisting tracking data to the database. For high-traffic production applications (> 10,000 RPM), consider using aggressive filtering, sampling, or a separate database.
+
+For detailed benchmarking methodology, optimization strategies, and how to measure Rails Pulse's impact on your specific application, see the **[Performance Impact Guide](docs/performance_impact.md)**.
+
+### Running Performance Benchmarks
+
+Rails Pulse includes built-in benchmarking tools. To use them:
+
+```ruby
+# Add to your Gemfile (development/test group)
+gem 'benchmark-ips'
+gem 'memory_profiler'
+```
+
+```bash
+bundle install
+
+# Run all benchmarks
+bundle exec rake rails_pulse:benchmark:all
+
+# Run specific benchmarks
+bundle exec rake rails_pulse:benchmark:memory
+bundle exec rake rails_pulse:benchmark:request_overhead
+bundle exec rake rails_pulse:benchmark:middleware
+```
+
+See the **[Performance Impact Guide](docs/performance_impact.md)** for detailed instructions and interpreting results.
 
 ## Testing
 
