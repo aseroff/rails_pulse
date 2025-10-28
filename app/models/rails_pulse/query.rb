@@ -1,6 +1,6 @@
 module RailsPulse
   class Query < RailsPulse::ApplicationRecord
-    include Taggable
+    include RailsPulse::Taggable
 
     self.table_name = "rails_pulse_queries"
 
