@@ -5,12 +5,12 @@ if defined?(RailsCharts)
   module RailsCharts
     module CspPatch
       def line_chart(data_source, options = {})
-        chart_html = super(data_source, options)
+        chart_html = super(data_source, **options)
         add_csp_nonce_to_chart(chart_html)
       end
 
       def bar_chart(data_source, options = {})
-        chart_html = super(data_source, options)
+        chart_html = super(data_source, **options)
         add_csp_nonce_to_chart(chart_html)
       end
 
